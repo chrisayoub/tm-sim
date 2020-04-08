@@ -6,8 +6,6 @@ function getInputElem() {
 function configCanvas() {
     let stage = new Konva.Stage({
         container: 'content',
-        width: 500,
-        height: 500
     });
 }
 
@@ -46,8 +44,9 @@ b
 
 // Function that grabs input and updates the display to reflect the input
 function doUpdate() {
+    const tapeValue = document.getElementById("tape").value;
     const inputData = getInputElem().value;
-    alert(inputData);
+    alert(inputData + "\n" + tapeValue);
     // TODO complete
 }
 
