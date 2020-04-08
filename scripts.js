@@ -32,6 +32,7 @@ window.onload = () => {
 # This means that if in state 'b', move left and enter state 'a'.
 # Possible movements are left '<' and right '>'
 
+# Note that the initial state is always 'a'. Use the state alphabet of '[a-z]'
 # This example is included below, feel free to delete.
 
 a,1
