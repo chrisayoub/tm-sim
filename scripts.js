@@ -2,20 +2,10 @@ function getInputElem() {
     return document.getElementById("inputArea");
 }
 
-// TODO update this
-function configCanvas() {
-    let stage = new Konva.Stage({
-        container: 'content',
-    });
-}
-
 // Executes once page loads
 window.onload = () => {
     // Set update button functionality
     document.getElementById("update").onclick = doUpdate;
-
-    // Configure canvas
-    configCanvas();
 
     // Set default text of text area
     getInputElem().value =
@@ -45,9 +35,45 @@ b
 
 // Function that grabs input and updates the display to reflect the input
 function doUpdate() {
+    // MARK -- Parse and validate input
+
     const tapeValue = document.getElementById("tape").value;
-    const inputData = getInputElem().value;
-    alert(inputData + "\n" + tapeValue);
-    // TODO complete
+    const ruleText = getInputElem().value;
+
+    // Validate tape input
+    const tapeRegex = RegExp("^[01]+$");
+    if (!tapeRegex.test(tapeValue)) {
+        alert("Error: tape is empty or contains invalid characters.")
+        return;
+    }
+
+    // Clean rule input
+    // https://stackoverflow.com/questions/1418050/string-strip-for-javascript
+    let lines = ruleText.split("\n")
+        .map(line => line.replace(/^\s+|\s+$/g, '')) // Trim strings
+        .filter(line => !line.startsWith("#") && line.length > 0); // Remove comments and blank lines
+
+    // TODO validate that the rules are valid
+
+    // Represent current tape with array
+    // Initial position is index 0, initial state is 'a'
+    let tape = tapeValue.split("");
+
+    // TODO figure out some way to internally represent the rules and possible transitions from current state
+
+    // MARK -- Formulate output / display
+
+    // TODO complete, need to draw elements on the Canvas with possible forward/backward states
+    // Can adhere to some limit
 }
 
+// TODO update this
+// https://konvajs.org/docs/overview.html
+function configCanvas(rules, tape) {
+    let stage = new Konva.Stage({
+        container: 'content',
+    });
+
+    let layer = new Konva.Layer();
+
+}
