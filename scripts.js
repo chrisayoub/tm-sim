@@ -170,48 +170,40 @@ function configCanvas(rules, tape) {
         }
     ]
 
-    const X_GAP = 20;
-    const Y_GAP = 10;
-
     const currBox = drawTmState(curr.tape, curr.state, curr.stateIndex, layer, width / 2, height / 2);
     // Can set color of our 'current' TM state
     currBox.fill('#85b942');
 
     // Helper values
+    const X_GAP = 20;
+    const Y_GAP = 10;
+    const colSep = (currBox.width() * 1.5) + X_GAP;
     const getInitY = (arrLength) => currBox.y() - currBox.height() / 2 + (arrLength / 2 * (Y_GAP + currBox.height()));
     const yChange = Y_GAP + currBox.height();
 
+    const drawLineHelper = (startBox, endBox) => {
+        const x1 = startBox.x() + (startBox.width() / 2);
+        const y1 = startBox.y();
+        const x2 = endBox.x() - (endBox.width() / 2);
+        const y2 = endBox.y();
+        drawLine(x1, y1, x2, y2, layer);
+    }
+
     // Previous boxes
-    const prevX = currBox.x() - (currBox.width() * 1.5) - X_GAP;
+    const prevX = currBox.x() - colSep;
     let prevY = getInitY(prev.length);
     for (let c of prev) {
         const newBox = drawTmState(c.tape, c.state, c.stateIndex, layer, prevX, prevY);
-
-        const x1 = newBox.x() + (newBox.width() / 2);
-        const y1 = newBox.y();
-
-        const x2 = currBox.x() - (currBox.width() / 2);
-        const y2 = currBox.y();
-
-        drawLine(x1, y1, x2, y2, layer);
-
+        drawLineHelper(newBox, currBox);
         prevY -= yChange;
     }
 
     // Next boxes
-    const nextX = currBox.x() + (currBox.width() * 1.5) + X_GAP;
+    const nextX = currBox.x() + colSep;
     let nextY = getInitY(fwd.length);
     for (let c of fwd) {
         const newBox = drawTmState(c.tape, c.state, c.stateIndex, layer, nextX, nextY);
-
-        const x1 = currBox.x() + (currBox.width() / 2);
-        const y1 = currBox.y();
-
-        const x2 = newBox.x() - (newBox.width() / 2);
-        const y2 = newBox.y();
-
-        drawLine(x1, y1, x2, y2, layer);
-
+        drawLineHelper(currBox, newBox);
         nextY -= yChange;
     }
 
