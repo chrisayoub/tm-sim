@@ -7,9 +7,6 @@ window.onload = () => {
     // Set update button functionality
     document.getElementById("update").onclick = doUpdate;
 
-    // TODO alter this call, simply here for testing
-    configCanvas();
-
     // Set default text of text area
     getInputElem().value =
 `# Commented-lines here are expressed with '#'
@@ -60,6 +57,7 @@ function doUpdate() {
 
     // Represent current tape with array
     // Initial position is index 0, initial state is 'a'
+    // TODO rather than assuming this initial position, let's add something to accept this as input (?)
     let tape = tapeValue.split("");
 
     // TODO figure out some way to internally represent the rules and possible transitions from current state
@@ -68,6 +66,9 @@ function doUpdate() {
 
     // TODO complete, need to draw elements on the Canvas with possible forward/backward states
     // Can adhere to some limit
+
+    // TODO alter this call, simply here for testing
+    configCanvas();
 }
 
 function drawTmState(tape, state, stateIndex, layer, x, y) {
@@ -116,6 +117,75 @@ function drawLine(x1, y1, x2, y2, layer) {
     layer.add(line);
 }
 
+function allowStageZoom(stage) {
+    // https://konvajs.org/docs/sandbox/Zooming_Relative_To_Pointer.html
+    const scaleBy = 1.1;
+    stage.on('wheel', e => {
+        e.evt.preventDefault();
+        const oldScale = stage.scaleX();
+
+        const mousePointTo = {
+            x: stage.getPointerPosition().x / oldScale - stage.x() / oldScale,
+            y: stage.getPointerPosition().y / oldScale - stage.y() / oldScale
+        };
+
+        const newScale =
+            e.evt.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy;
+        stage.scale({ x: newScale, y: newScale });
+
+        const newPos = {
+            x:
+                -(mousePointTo.x - stage.getPointerPosition().x / newScale) *
+                newScale,
+            y:
+                -(mousePointTo.y - stage.getPointerPosition().y / newScale) *
+                newScale
+        };
+        stage.position(newPos);
+        stage.batchDraw();
+    });
+}
+
+// Draws a central box, with immediate previous and next transitions
+function drawBoxWithTransitions(prev, curr, fwd, originX, originY, layer) {
+    const currBox = drawTmState(curr.tape, curr.state, curr.stateIndex, layer, originX, originY);
+    // Can set color of our 'current' TM state, if desired
+    currBox.fill('#85b942');
+
+    // Helper values
+    const X_GAP = 20;
+    const Y_GAP = 10;
+    const colSep = (currBox.width() * 1.5) + X_GAP;
+    const getInitY = (arrLength) => currBox.y() - currBox.height() / 2 + (arrLength / 2 * (Y_GAP + currBox.height()));
+    const yChange = Y_GAP + currBox.height();
+
+    const drawLineHelper = (startBox, endBox) => {
+        const x1 = startBox.x() + (startBox.width() / 2);
+        const y1 = startBox.y();
+        const x2 = endBox.x() - (endBox.width() / 2);
+        const y2 = endBox.y();
+        drawLine(x1, y1, x2, y2, layer);
+    }
+
+    // Previous boxes
+    const prevX = currBox.x() - colSep;
+    let prevY = getInitY(prev.length);
+    for (let c of prev) {
+        const newBox = drawTmState(c.tape, c.state, c.stateIndex, layer, prevX, prevY);
+        drawLineHelper(newBox, currBox);
+        prevY -= yChange;
+    }
+
+    // Next boxes
+    const nextX = currBox.x() + colSep;
+    let nextY = getInitY(fwd.length);
+    for (let c of fwd) {
+        const newBox = drawTmState(c.tape, c.state, c.stateIndex, layer, nextX, nextY);
+        drawLineHelper(currBox, newBox);
+        nextY -= yChange;
+    }
+}
+
 // TODO update this
 // https://konvajs.org/docs/overview.html
 function configCanvas(rules, tape) {
@@ -126,14 +196,18 @@ function configCanvas(rules, tape) {
     const stage = new Konva.Stage({
         container: 'content',
         width: width,
-        height: height
+        height: height,
+        draggable: true
     });
-
+    allowStageZoom(stage);
     const layer = new Konva.Layer();
 
+    // Example instances, note that the transitions do not make sense
     const sampleTm = '0011010'.split('');
-
-    // Example code
+    // TODO: Actually use the given input rules to figure out how to continually generate previous/forwqrd states from the current
+    // Could use recursion?
+    // Note that the given code might need to be fixed for displaying. Say "k" in next is discovered to have a unique previous.
+    // Currently, will probably write on top of "d" our "curr". Will need to eventually fix this problem
     let prev = [
         {
             'tape': sampleTm,
@@ -170,42 +244,8 @@ function configCanvas(rules, tape) {
         }
     ]
 
-    const currBox = drawTmState(curr.tape, curr.state, curr.stateIndex, layer, width / 2, height / 2);
-    // Can set color of our 'current' TM state
-    currBox.fill('#85b942');
-
-    // Helper values
-    const X_GAP = 20;
-    const Y_GAP = 10;
-    const colSep = (currBox.width() * 1.5) + X_GAP;
-    const getInitY = (arrLength) => currBox.y() - currBox.height() / 2 + (arrLength / 2 * (Y_GAP + currBox.height()));
-    const yChange = Y_GAP + currBox.height();
-
-    const drawLineHelper = (startBox, endBox) => {
-        const x1 = startBox.x() + (startBox.width() / 2);
-        const y1 = startBox.y();
-        const x2 = endBox.x() - (endBox.width() / 2);
-        const y2 = endBox.y();
-        drawLine(x1, y1, x2, y2, layer);
-    }
-
-    // Previous boxes
-    const prevX = currBox.x() - colSep;
-    let prevY = getInitY(prev.length);
-    for (let c of prev) {
-        const newBox = drawTmState(c.tape, c.state, c.stateIndex, layer, prevX, prevY);
-        drawLineHelper(newBox, currBox);
-        prevY -= yChange;
-    }
-
-    // Next boxes
-    const nextX = currBox.x() + colSep;
-    let nextY = getInitY(fwd.length);
-    for (let c of fwd) {
-        const newBox = drawTmState(c.tape, c.state, c.stateIndex, layer, nextX, nextY);
-        drawLineHelper(currBox, newBox);
-        nextY -= yChange;
-    }
+    // Draws the above sample boxes
+    drawBoxWithTransitions(prev, curr, fwd, width / 2, height / 2, layer);
 
     stage.add(layer);
 }
