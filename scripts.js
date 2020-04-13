@@ -118,7 +118,12 @@ function drawGraph() {
         }
     ]
 
-    const getNodeLbl = (tm) => tm.tape.join('') + "\n" + ' '.repeat(tm.stateIndex) + tm.state
+    const getNodeLbl = (tm, level) => {
+        let result = tm.tape.join('') + "\n";
+        result += ' '.repeat(tm.stateIndex) + tm.state + "\n";
+        result += "Level: " + level;
+        return result;
+    }
     const elem = document.getElementById('content');
     const height = elem.clientHeight;
     const width = elem.clientWidth;
@@ -126,7 +131,8 @@ function drawGraph() {
     let id = 0;
     const cy = cytoscape({
         container: document.getElementById('content'),
-        // autolock: true,
+        autounselectify: true,
+        autoungrabify: true,
         minZoom: 0.1,
         maxZoom: 2,
         style: [
@@ -161,10 +167,11 @@ function drawGraph() {
     });
 
     const currId = id;
+    const currLevel = 0;
     cy.add({
         data: {
             id: id++,
-            lbl: getNodeLbl(curr)
+            lbl: getNodeLbl(curr, currLevel),
         },
         position: {
             x: width / 2,
@@ -177,7 +184,7 @@ function drawGraph() {
         cy.add({
             data: {
                 id: thisId,
-                lbl: getNodeLbl(p),
+                lbl: getNodeLbl(p, currLevel - 1),
             }
         })
         cy.add({
@@ -194,7 +201,7 @@ function drawGraph() {
         cy.add({
             data: {
                 id: thisId,
-                lbl: getNodeLbl(n),
+                lbl: getNodeLbl(n, currLevel + 1),
             }
         })
         cy.add({
@@ -207,9 +214,11 @@ function drawGraph() {
     }
 
     cy.layout({
-        name: 'breadthfirst',
-        directed: true,
-        grid: true,
+        name: 'dagre',
+        rankDir: 'LR',
+        // name: 'breadthfirst',
+        // directed: true,
+        // grid: true,
         spacingFactor: 1.1,
     }).run();
 }
