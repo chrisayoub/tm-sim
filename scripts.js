@@ -82,6 +82,8 @@ function drawTmState(tape, state, stateIndex, layer, x, y) {
         fontStyle: 'bold',
         padding: 16
     });
+    tapeText.offsetX(tapeText.width() / 2);
+    tapeText.offsetY(tapeText.height() / 2);
 
     const box = new Konva.Rect({
         x: x,
@@ -93,6 +95,8 @@ function drawTmState(tape, state, stateIndex, layer, x, y) {
         height: tapeText.height(),
         cornerRadius: 20
     });
+    box.offsetX(box.width() / 2);
+    box.offsetY(box.height() / 2);
 
     layer.add(box);
     layer.add(tapeText);
@@ -129,17 +133,87 @@ function configCanvas(rules, tape) {
 
     const sampleTm = '0011010'.split('');
 
-    const box1 = drawTmState(sampleTm, 'b', 3, layer, 20, 60);
-    const box2 = drawTmState(sampleTm, 'c', 2, layer, 200, 100);
+    // Example code
+    let prev = [
+        {
+            'tape': sampleTm,
+            'state': 'a',
+            'stateIndex': 0
+        },
+        {
+            'tape': sampleTm,
+            'state': 'b',
+            'stateIndex': 1
+        },
+        {
+            'tape': sampleTm,
+            'state': 'e',
+            'stateIndex': 6
+        }
+    ]
 
-    // Forward line example
-    const x1 = box1.x() + box1.width();
-    const y1 = box1.y() + (box1.height() / 2);
+    const curr = {
+        'tape': sampleTm,
+        'state': 'd',
+        'stateIndex': 3
+    }
+    const fwd = [
+        {
+            'tape': sampleTm,
+            'state': 'j',
+            'stateIndex': 5
+        },
+        {
+            'tape': sampleTm,
+            'state': 'k',
+            'stateIndex': 4
+        }
+    ]
 
-    const x2 = box2.x();
-    const y2 = box2.y() + (box2.height() / 2);
+    const X_GAP = 20;
+    const Y_GAP = 10;
 
-    drawLine(x1, y1, x2, y2, layer);
+    const currBox = drawTmState(curr.tape, curr.state, curr.stateIndex, layer, width / 2, height / 2);
+    // Can set color of our 'current' TM state
+    currBox.fill('#85b942');
+
+    // Helper values
+    const getInitY = (arrLength) => currBox.y() - currBox.height() / 2 + (arrLength / 2 * (Y_GAP + currBox.height()));
+    const yChange = Y_GAP + currBox.height();
+
+    // Previous boxes
+    const prevX = currBox.x() - (currBox.width() * 1.5) - X_GAP;
+    let prevY = getInitY(prev.length);
+    for (let c of prev) {
+        const newBox = drawTmState(c.tape, c.state, c.stateIndex, layer, prevX, prevY);
+
+        const x1 = newBox.x() + (newBox.width() / 2);
+        const y1 = newBox.y();
+
+        const x2 = currBox.x() - (currBox.width() / 2);
+        const y2 = currBox.y();
+
+        drawLine(x1, y1, x2, y2, layer);
+
+        prevY -= yChange;
+    }
+
+    // Next boxes
+    const nextX = currBox.x() + (currBox.width() * 1.5) + X_GAP;
+    let nextY = getInitY(fwd.length);
+    for (let c of fwd) {
+        const newBox = drawTmState(c.tape, c.state, c.stateIndex, layer, nextX, nextY);
+
+        const x1 = currBox.x() + (currBox.width() / 2);
+        const y1 = currBox.y();
+
+        const x2 = newBox.x() - (newBox.width() / 2);
+        const y2 = newBox.y();
+
+        drawLine(x1, y1, x2, y2, layer);
+
+        nextY -= yChange;
+    }
 
     stage.add(layer);
 }
