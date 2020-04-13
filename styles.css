@@ -7,4 +7,6 @@
 #content {
     height: 60%;
     width: 100%;
+    border: 1px solid black;
+    margin-bottom: 4px;
 }
