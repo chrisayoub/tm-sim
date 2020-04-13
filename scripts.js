@@ -118,39 +118,40 @@ function drawGraph() {
         }
     ]
 
+    // Function to create the text on a node
     const getNodeLbl = (tm, level) => {
         let result = tm.tape.join('') + "\n";
         result += ' '.repeat(tm.stateIndex) + tm.state + "\n";
         result += "Level: " + level;
         return result;
     }
-    const elem = document.getElementById('content');
-    const height = elem.clientHeight;
-    const width = elem.clientWidth;
 
+    // Nodes and edges need unique IDs
     let id = 0;
+
+    // Setup the graph
     const cy = cytoscape({
         container: document.getElementById('content'),
-        autounselectify: true,
-        autoungrabify: true,
-        minZoom: 0.1,
+        autounselectify: true, // Disable selection
+        autoungrabify: true, // Disable grabbing
+        minZoom: 0.1, // Set zoom limits
         maxZoom: 2,
         style: [
             {
                 selector: 'node',
                 style: {
-                    label: 'data(lbl)',
-                    'font-family': 'Courier',
+                    label: 'data(lbl)', // Grab label from data
+                    'font-family': 'Courier', // Label style
                     'font-size': 20,
                     'font-style': 'bold',
-                    padding: 12,
-                    'background-color': '#d1d1d1',
+                    padding: 12, // Node padding
+                    'background-color': '#d1d1d1', // Node color and border
                     'border-width': '1',
                     'border-color': 'black',
-                    width: 'label',
+                    width: 'label', // Node dimensions and shape
                     height: 'label',
                     shape: 'rectangle',
-                    'text-justification': 'left',
+                    'text-justification': 'left', // Label position
                     'text-valign': 'center',
                     'text-wrap': 'wrap'
                 }
@@ -158,7 +159,7 @@ function drawGraph() {
             {
                 selector: 'edge',
                 style: {
-                    'curve-style': 'bezier',
+                    'curve-style': 'bezier', // Directed edges
                     'target-arrow-shape': 'triangle',
                     'width': 5,
                 }
@@ -166,19 +167,17 @@ function drawGraph() {
         ]
     });
 
+    // Node for current
     const currId = id;
     const currLevel = 0;
     cy.add({
         data: {
             id: id++,
             lbl: getNodeLbl(curr, currLevel),
-        },
-        position: {
-            x: width / 2,
-            y: height / 2,
         }
     })
 
+    // Previous nodes and edges *to* current
     for (let p of prev) {
         const thisId = id++;
         cy.add({
@@ -196,6 +195,7 @@ function drawGraph() {
         })
     }
 
+    // Next nodes and edges *from* current
     for (let n of fwd) {
         const thisId = id++;
         cy.add({
@@ -213,6 +213,7 @@ function drawGraph() {
         })
     }
 
+    // DAG layout from left-to-right
     cy.layout({
         name: 'dagre',
         rankDir: 'LR',
