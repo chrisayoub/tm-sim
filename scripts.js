@@ -150,7 +150,7 @@ function drawGraph() {
                     width: 'label',
                     height: 'label',
                     shape: 'rectangle',
-                    'text-justification': 'center',
+                    'text-justification': 'left',
                     'text-valign': 'center',
                     'text-wrap': 'wrap'
                 }
