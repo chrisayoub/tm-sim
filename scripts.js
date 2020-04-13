@@ -7,6 +7,9 @@ window.onload = () => {
     // Set update button functionality
     document.getElementById("update").onclick = doUpdate;
 
+    // TODO alter this call, simply here for testing
+    configCanvas();
+
     // Set default text of text area
     getInputElem().value =
 `# Commented-lines here are expressed with '#'
@@ -67,13 +70,76 @@ function doUpdate() {
     // Can adhere to some limit
 }
 
+function drawTmState(tape, state, stateIndex, layer, x, y) {
+    const tapeVal = tape.join('') + "\n" + ' '.repeat(stateIndex) + state
+
+    const tapeText = new Konva.Text({
+        x: x,
+        y: y,
+        text: tapeVal,
+        fontSize: 20,
+        fontFamily:  'Courier',
+        fontStyle: 'bold',
+        padding: 16
+    });
+
+    const box = new Konva.Rect({
+        x: x,
+        y: y,
+        stroke: '#555',
+        strokeWidth: 1,
+        fill: '#ddd',
+        width: tapeText.width(),
+        height: tapeText.height(),
+        cornerRadius: 20
+    });
+
+    layer.add(box);
+    layer.add(tapeText);
+
+    return box;
+}
+
+function drawLine(x1, y1, x2, y2, layer) {
+    const line = new Konva.Arrow({
+        points: [x1, y1, x2, y2],
+        pointerLength: 10,
+        pointerWidth: 10,
+        fill: 'black',
+        stroke: 'black',
+        strokeWidth: 2
+    });
+    layer.add(line);
+}
+
 // TODO update this
 // https://konvajs.org/docs/overview.html
 function configCanvas(rules, tape) {
-    let stage = new Konva.Stage({
+    const elem = document.getElementById('content');
+    const height = elem.clientHeight;
+    const width = elem.clientWidth;
+
+    const stage = new Konva.Stage({
         container: 'content',
+        width: width,
+        height: height
     });
 
-    let layer = new Konva.Layer();
+    const layer = new Konva.Layer();
 
+    const sampleTm = '0011010'.split('');
+
+    const box1 = drawTmState(sampleTm, 'b', 3, layer, 20, 60);
+    const box2 = drawTmState(sampleTm, 'c', 2, layer, 200, 100);
+
+    // Forward line example
+    const x1 = box1.x() + box1.width();
+    const y1 = box1.y() + (box1.height() / 2);
+
+    const x2 = box2.x();
+    const y2 = box2.y() + (box2.height() / 2);
+
+    drawLine(x1, y1, x2, y2, layer);
+
+    stage.add(layer);
 }
