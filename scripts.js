@@ -216,9 +216,6 @@ function drawGraph() {
     cy.layout({
         name: 'dagre',
         rankDir: 'LR',
-        // name: 'breadthfirst',
-        // directed: true,
-        // grid: true,
         spacingFactor: 1.1,
     }).run();
 }
