@@ -1,5 +1,5 @@
 <head>
-    <script src="https://unpkg.com/konva@4.0.0/konva.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.14.1/cytoscape.min.js"></script>
     <script src="scripts.js"></script>
     <link rel="stylesheet" href="styles.css">
     <title>Reversible TM Simulator</title>
@@ -16,7 +16,14 @@
                 Initial TM tape config (Use 0s and 1s):
                 <input id="tape" type="text" placeholder="101010">
             </label>
+            <br/>
             <label>
+                Initial state index (state 'a'):
+                <input id="stateIndex" type="text" placeholder="0, 1, 2, etc." value="0">
+            </label>
+            <br/><br/>
+            <label>
+                TM rules input:
                 <textarea id="inputArea"></textarea>
             </label>
         </div>
