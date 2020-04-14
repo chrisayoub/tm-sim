@@ -120,11 +120,11 @@ function doUpdate() {
 
     curr = {
         'tape': tape,
-        'state': 'd',
+        'state': 'a',
         'stateIndex': stateIndex
     }
 
-    // TODO figure out some way to internally represent the rules and possible transitions from current state
+    // Saving TM rules in read/write and movement maps
     let readWriteMap = new Map()
     let movementMap = new Map()
 
@@ -148,6 +148,56 @@ function doUpdate() {
     }
 
     // MARK -- Formulate output / display
+    currTape = tape;
+    currIndex = stateIndex;
+    currState = 'a';
+    prev = []
+    fwd = []
+
+    var workTapes = [curr];
+
+    while(workTapes.length > 0){
+        newTape = false;
+        newElem = {};
+
+        elem = workTapes.pop();
+        tape = elem.tape;
+        state = elem.state;
+        index = elem.stateIndex;
+
+        newElem.tape = String(tape);
+        newElem.state = String(state);
+        newElem.index = String(index);
+
+        if(rule = readWriteMap.get(String(state + ',' + tape[index]))){
+            newElem.tape[index] = rule[0];
+            newElem.state = rule[2];
+            newTape = true;
+        }
+
+        if(rule = movementMap.get(String(elem.state))){
+            if(rule[0] == '>'){
+                newElem.stateIndex = String(parseInt(index) + 1);
+            }
+            else {
+                newElem.stateIndex = String(parseInt(index) - 1);
+            }
+
+            // Think about padding '_' on either end later?
+            if(parseInt(elem.stateIndex >= 0)){
+                newTape = true;
+            }
+            else{
+                newTape = false;
+            }
+
+        }
+
+        if(newTape){
+            workTapes.push(newElem);
+            fwd.push(newElem);
+        }
+    }
 
     // TODO complete, need to draw elements on the graph with possible forward/backward states
     // Can adhere to some limit
@@ -176,11 +226,6 @@ function drawGraph(curr) {
         }
     ]
 
-    /*const curr = {
-        'tape': sampleTm,
-        'state': 'd',
-        'stateIndex': 3
-    }*/
     const fwd = [
         {
             'tape': sampleTm,
