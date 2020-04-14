@@ -46,6 +46,8 @@ function doUpdate() {
 
     // Validate tape input
     const tapeRegex = RegExp("^[01]+$");
+
+
     if (!tapeRegex.test(tapeValue)) {
         alert("Error: tape is empty or contains invalid characters.")
         return;
@@ -63,7 +65,48 @@ function doUpdate() {
         .map(line => line.replace(/^\s+|\s+$/g, '')) // Trim strings
         .filter(line => !line.startsWith("#") && line.length > 0); // Remove comments and blank lines
 
-    // TODO validate that the rules are valid
+    // validate that the rules are valid
+    const letterRegex = RegExp("[a-z]");
+    const numRegex = RegExp("[01]");
+    const directionRegex = RegExp("[<>]");
+    
+    movementCheck = false;
+    
+    for (let [lineNum, l] of lines.entries()){
+        if(l.length == 1 && letterRegex.test(l[0])){
+            movementCheck = true;
+        }
+
+        // Check read/write rules
+        if(!movementCheck){
+            if(lineNum % 2 == 0){
+                if(l.length != 3 || !letterRegex.test(l[0]) || l[1] != ',' || !numRegex.test(l[2])){
+                    alert('Error: invalid input in read/write rules');
+                }
+            }
+            else{
+                if(l.length != 3 || !numRegex.test(l[0]) || l[1] != ',' || !letterRegex.test(l[2])){
+                    alert('Error: invalid input in read/write rules');
+                }
+            }
+        }
+        // Check movement rules
+        else{
+            if(lineNum % 2 == 0){
+                if(l.length != 1 || !letterRegex.test(l[0])){
+                    alert('Error: invalid input in movement rules');
+                }
+            }
+            else{
+                if(l.length != 3 || !directionRegex.test(l[0]) || l[1] != ',' || !letterRegex.test(l[2])){
+                    alert('Error: invalid input in movement rules');
+                }
+            }
+        }
+    }
+
+
+    
 
     // Represent current tape with array
     // Initial position is index 0, initial state is 'a'
