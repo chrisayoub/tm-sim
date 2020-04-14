@@ -8,7 +8,7 @@ window.onload = () => {
     document.getElementById("update").onclick = doUpdate;
 
     // TODO DELETE THIS, here for testing
-    drawGraph()
+    //drawGraph()
 
     // Set default text of text area
     getInputElem().value =
@@ -66,6 +66,10 @@ function doUpdate() {
         .filter(line => !line.startsWith("#") && line.length > 0); // Remove comments and blank lines
 
     // validate that the rules are valid
+    if(lines.length % 2 != 0){
+        alert("Error: incomplete rule detected");
+    }
+
     const letterRegex = RegExp("[a-z]");
     const numRegex = RegExp("[01]");
     const directionRegex = RegExp("[<>]");
@@ -73,20 +77,23 @@ function doUpdate() {
     movementCheck = false;
     
     for (let [lineNum, l] of lines.entries()){
-        if(l.length == 1 && letterRegex.test(l[0])){
+        if(l.length == 1 && letterRegex.test(l[0]) && lineNum % 2 == 0){
             movementCheck = true;
+        }
+        if(l.length == 1 && letterRegex.test(l[0]) && lineNum %2 == 1){
+            alert("Error: incomplete read/write rule detected");
         }
 
         // Check read/write rules
         if(!movementCheck){
             if(lineNum % 2 == 0){
                 if(l.length != 3 || !letterRegex.test(l[0]) || l[1] != ',' || !numRegex.test(l[2])){
-                    alert('Error: invalid input in read/write rules');
+                    alert("Error: invalid input in read/write rules");
                 }
             }
             else{
                 if(l.length != 3 || !numRegex.test(l[0]) || l[1] != ',' || !letterRegex.test(l[2])){
-                    alert('Error: invalid input in read/write rules');
+                    alert("Error: invalid input in read/write rules");
                 }
             }
         }
@@ -94,35 +101,61 @@ function doUpdate() {
         else{
             if(lineNum % 2 == 0){
                 if(l.length != 1 || !letterRegex.test(l[0])){
-                    alert('Error: invalid input in movement rules');
+                    alert("Error: invalid input in movement rules");
                 }
             }
             else{
                 if(l.length != 3 || !directionRegex.test(l[0]) || l[1] != ',' || !letterRegex.test(l[2])){
-                    alert('Error: invalid input in movement rules');
+                    alert("Error: invalid input in movement rules");
                 }
             }
         }
     }
 
 
-    
-
     // Represent current tape with array
     // Initial position is index 0, initial state is 'a'
     // TODO rather than assuming this initial position, let's add something to accept this as input (?)
     let tape = tapeValue.split("");
 
+    curr = {
+        'tape': tape,
+        'state': 'd',
+        'stateIndex': stateIndex
+    }
+
     // TODO figure out some way to internally represent the rules and possible transitions from current state
+    let readWriteMap = new Map()
+    let movementMap = new Map()
+
+    movementCheck = false;
+
+    for (let [lineNum, l] of lines.entries()){
+        if(lineNum % 2 != 0){
+            continue;
+        }
+
+        if(l.length == 1 && letterRegex.test(l[0])){
+            movementCheck = true;
+        }
+
+        if(!movementCheck){
+            readWriteMap.set(l,lines[lineNum+1]);   // i.e. 'a,1' -> '0,b'
+        }
+        else{
+            movementMap.set(l,lines[lineNum+1]);    // i.e. 'b' -> '<,a'
+        }
+    }
 
     // MARK -- Formulate output / display
 
     // TODO complete, need to draw elements on the graph with possible forward/backward states
     // Can adhere to some limit
 
+    drawGraph(curr);
 }
 
-function drawGraph() {
+function drawGraph(curr) {
     // Sample DATA - Example instances, note that the transitions do not make sense
     const sampleTm = '0011010'.split('');
     const prev = [
@@ -143,11 +176,11 @@ function drawGraph() {
         }
     ]
 
-    const curr = {
+    /*const curr = {
         'tape': sampleTm,
         'state': 'd',
         'stateIndex': 3
-    }
+    }*/
     const fwd = [
         {
             'tape': sampleTm,
