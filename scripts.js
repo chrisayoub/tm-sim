@@ -36,6 +36,7 @@ b
 `;
 };
 
+// Parse inputted rules, and checks for errors at the same time
 function parseRules(lines) {
     if (lines.length % 2 !== 0){
         alert("Error: incomplete rule pair detected.");
@@ -109,14 +110,17 @@ function parseRules(lines) {
     }
 }
 
+// Global ID used for nodes, edges
 let globalId = 0;
 
 // Return a list of possible states from the current state
+// This is a recursive function that uses backtracking to compute
 function resolveStates(currentState, currentDepth, readWriteRules, movementRules) {
     const resultNodes = [];
     const resultEdges = [];
 
     // Limit on our depth here
+    // TODO we should have a UI control for this value to let the user limit as desired
     if (currentDepth >= 5) {
         return {
             resultNodes,
@@ -124,11 +128,11 @@ function resolveStates(currentState, currentDepth, readWriteRules, movementRules
         };
     }
 
-    // Adorn extra properties needed
+    // Adorn extra properties needed for graph display
     const id = globalId++; // Use global counter for unique IDs
     currentState.id = id;
     currentState.depth = currentDepth;
-    // Copy of object in result
+    // Place deep copy of object in result
     resultNodes.push(JSON.parse(JSON.stringify(currentState)));
 
     // Backup our initial values, to restore later
@@ -137,7 +141,9 @@ function resolveStates(currentState, currentDepth, readWriteRules, movementRules
     const initTape = [...currentState.tape];
     const initBit = initTape[initIndex];
 
+    // Two possible rule types...
     const transforms = [
+        // Read/write
         {
             key: initState + ',' + initBit, // Defines key into readWriteRules map
             ruleSet: readWriteRules,
@@ -150,6 +156,7 @@ function resolveStates(currentState, currentDepth, readWriteRules, movementRules
                 toChange.state = destState;
             }
         },
+        // Movement
         {
             key: initState, // Defines key into movementRules map
             ruleSet: movementRules,
@@ -242,7 +249,7 @@ function doUpdate() {
     const ruleText = getInputElem().value;
 
     // Validate tape input
-    const tapeRegex = RegExp("^[01]+$");
+    const tapeRegex = RegExp("^[01_]+$");
     if (!tapeRegex.test(tapeValue)) {
         alert("Error: tape is empty or contains invalid characters.");
         return;
@@ -260,7 +267,7 @@ function doUpdate() {
         return;
     }
 
-    // Clean rule input
+    // Clean rules input
     // https://stackoverflow.com/questions/1418050/string-strip-for-javascript
     let lines = ruleText.split("\n")
         .map(line => line.replace(/^\s+|\s+$/g, '')) // Trim strings
@@ -278,17 +285,17 @@ function doUpdate() {
 
     // Represent current tape with array
     // Initial position is index `stateIndex`, initial state is 'a'
+    // TODO instead of assuming 'a', let's take this in as user input
     let tape = tapeValue.split("");
-
-    // Now, in a recursive fashion, let us figure out all possible "forward" states from the "current"
-    // We will impose a temporary limit on the "depth".
-    // We also need to note down a mapping of "edges".
     const initState = {
         tape,
         'state': 'a',
         stateIndex
     };
 
+    // Now, in a recursive fashion, let us figure out all possible "forward" states from the "current"
+    // We will impose a temporary limit on the "depth".
+    // We also need to note down a mapping of "edges".
     const forwardResult = resolveStates(initState, 0, readWriteMap, movementMap);
     const forwardNodes = forwardResult.resultNodes;
     const forwardEdges = forwardResult.resultEdges;
@@ -302,6 +309,7 @@ function doUpdate() {
     drawGraph(forwardNodes, forwardEdges);
 }
 
+// Draws the nodes/edges in a graph using a display layout based on BFS
 function drawGraph(nodes, edges) {
     // Function to create the text on a node
     const getNodeLbl = (tm) => {
