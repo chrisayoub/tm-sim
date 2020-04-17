@@ -1,9 +1,12 @@
 <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.14.1/cytoscape.min.js"></script>
+<!-- https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.14.1/cytoscape.min.js -->
+    <script src="lib/cytoscape.min.js"></script>
 
-<!--    Custom layout -->
-    <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
-    <script src="https://cytoscape.org/cytoscape.js-dagre/cytoscape-dagre.js"></script>
+    <!-- Custom graph layout -->
+<!-- https://unpkg.com/dagre@0.8.5/dist/dagre.min.js -->
+    <script src="lib/dagre.min.js"></script>
+<!-- https://cytoscape.org/cytoscape.js-dagre/cytoscape-dagre.js -->
+    <script src="lib/cytoscape-dagre.js"></script>
 
     <script src="scripts.js"></script>
     <link rel="stylesheet" href="styles.css">
@@ -18,7 +21,7 @@
         <button id="update">Update Visualization</button>
         <div>
             <label>
-                Initial TM tape config (Use 0s and 1s):
+                Initial TM tape config (Use 0,1, _):
                 <input id="tape" type="text" placeholder="101010" value="101010">
             </label>
             <br/>
