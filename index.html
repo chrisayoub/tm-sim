@@ -1,39 +1,43 @@
-<head>
-<!-- https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.14.1/cytoscape.min.js -->
-    <script src="lib/cytoscape.min.js"></script>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
 
-    <!-- Custom graph layout -->
-<!-- https://unpkg.com/dagre@0.8.5/dist/dagre.min.js -->
-    <script src="lib/dagre.min.js"></script>
-<!-- https://cytoscape.org/cytoscape.js-dagre/cytoscape-dagre.js -->
-    <script src="lib/cytoscape-dagre.js"></script>
+        <!-- https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.14.1/cytoscape.min.js -->
+        <script src="lib/cytoscape.min.js"></script>
 
-    <script src="scripts.js"></script>
-    <link rel="stylesheet" href="styles.css">
-    <title>Reversible TM Simulator</title>
-</head>
-<body>
-    <!-- Display section -->
-    <div id="content"></div>
+        <!-- Custom graph layout -->
+    <!-- https://unpkg.com/dagre@0.8.5/dist/dagre.min.js -->
+        <script src="lib/dagre.min.js"></script>
+    <!-- https://cytoscape.org/cytoscape.js-dagre/cytoscape-dagre.js -->
+        <script src="lib/cytoscape-dagre.js"></script>
 
-    <!-- Input section -->
-    <div id="input">
-        <button id="update">Update Visualization</button>
-        <div>
-            <label>
-                Initial TM tape config (Use 0,1, _):
-                <input id="tape" type="text" placeholder="101010" value="101010">
-            </label>
-            <br/>
-            <label>
-                Initial state index (state 'a'):
-                <input id="stateIndex" type="text" placeholder="0, 1, 2, etc." value="0">
-            </label>
-            <br/><br/>
-            <label>
-                TM rules input:
-                <textarea id="inputArea"></textarea>
-            </label>
+        <script src="scripts.js"></script>
+        <link rel="stylesheet" href="styles.css">
+        <title>Reversible TM Simulator</title>
+    </head>
+    <body>
+        <!-- Display section -->
+        <div id="content"></div>
+
+        <!-- Input section -->
+        <div id="input">
+            <button id="update">Update Visualization</button>
+            <div>
+                <label>
+                    Initial TM tape config (Use 0,1, _):
+                    <input id="tape" type="text" placeholder="101010" value="101010">
+                </label>
+                <br/>
+                <label>
+                    Initial state index (state 'a'):
+                    <input id="stateIndex" type="text" placeholder="0, 1, 2, etc." value="0">
+                </label>
+                <br/><br/>
+                <label>
+                    TM rules input:
+                    <textarea id="inputArea"></textarea>
+                </label>
+            </div>
         </div>
-    </div>
-</body>
+    </body>
+</html>
