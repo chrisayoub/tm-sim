@@ -313,7 +313,7 @@ function doUpdate() {
     cy.style()
         .selector('#' + initNodeId)
         .style({
-            'background-color': 'lawngreen',
+            'background-opacity': '1',
         })
         .update();
 }
@@ -329,6 +329,8 @@ function drawGraph(nodes, edges) {
     };
 
     // Setup the graph
+    const boxTextBorderColor = "#332648";
+    const arrowColor = "steelblue";
     const cy = cytoscape({
         container: document.getElementById('content'),
         autounselectify: true, // Disable selection
@@ -343,13 +345,15 @@ function drawGraph(nodes, edges) {
                     'font-family': 'Courier', // Label style
                     'font-size': 20,
                     'font-style': 'bold',
+                    'color': boxTextBorderColor,
                     padding: 12, // Node padding
-                    'background-color': '#d1d1d1', // Node color and border
+                    'background-color': '#b5b5b5', // Node color and border
+                    'background-opacity': '0.2',
                     'border-width': '1',
-                    'border-color': 'black',
+                    'border-color': boxTextBorderColor,
                     width: 'label', // Node dimensions and shape
                     height: 'label',
-                    shape: 'rectangle',
+                    shape: 'round-rectangle',
                     'text-justification': 'left', // Label position
                     'text-valign': 'center',
                     'text-wrap': 'wrap'
@@ -361,6 +365,8 @@ function drawGraph(nodes, edges) {
                     'curve-style': 'bezier', // Directed edges
                     'target-arrow-shape': 'triangle',
                     'width': 5,
+                    'target-arrow-color': arrowColor,
+                    'line-color': arrowColor
                 }
             }
         ]
