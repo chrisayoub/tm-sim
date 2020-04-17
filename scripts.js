@@ -306,7 +306,16 @@ function doUpdate() {
     // Or, set some flag in resolveStates
 
     // MARK -- Formulate output / display
-    drawGraph(forwardNodes, forwardEdges);
+    const cy = drawGraph(forwardNodes, forwardEdges);
+
+    // Special styles / coloring can be applied on selected nodes
+    const initNodeId = forwardNodes[0].id;
+    cy.style()
+        .selector('#' + initNodeId)
+        .style({
+            'background-color': 'lawngreen',
+        })
+        .update();
 }
 
 // Draws the nodes/edges in a graph using a display layout based on BFS
@@ -380,4 +389,6 @@ function drawGraph(nodes, edges) {
         rankDir: 'LR',
         spacingFactor: 1.1,
     }).run();
+
+    return cy;
 }
