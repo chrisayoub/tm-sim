@@ -83,7 +83,7 @@ function parseRules(lines) {
         } else {
             // R/W rule
             const startSymbol = firstToks[0];
-            const readBit = firstToks[0];
+            const readBit = firstToks[1];
             const writeBit = secondToks[0];
             const destSymbol = secondToks[1];
 
@@ -128,7 +128,7 @@ function resolveStates(currentState, currentDepth, readWriteRules, movementRules
     currentState.id = id;
     currentState.depth = currentDepth;
     // Copy of object in result
-    resultNodes.push(...currentState);
+    resultNodes.push({...currentState});
 
     // Backup our initial values, to restore later
     const initState = currentState.state;
@@ -136,9 +136,10 @@ function resolveStates(currentState, currentDepth, readWriteRules, movementRules
     const initTape = [...currentState.tape];
     const initBit = initTape[initIndex];
 
-    const transforms = {
-        readWriteRules: {
+    const transforms = [
+        {
             key: initState + ',' + initBit, // Defines key into readWriteRules map
+            ruleSet: readWriteRules,
             // Function on how to apply a R/W rule
             fn: (toChange, rule) => {
                 const writeBit = rule[0];
@@ -148,8 +149,9 @@ function resolveStates(currentState, currentDepth, readWriteRules, movementRules
                 toChange.state = destState;
             }
         },
-        movementRules: {
+        {
             key: initState, // Defines key into movementRules map
+            ruleSet: movementRules,
             // Function on how to apply a movement rule
             fn: (toChange, rule) => {
                 const move = rule[0];
@@ -176,13 +178,14 @@ function resolveStates(currentState, currentDepth, readWriteRules, movementRules
                 }
             }
         }
-    };
+    ];
 
     // For all kinds of transformation rules...
-    for (let ruleSet of transforms.keys()) {
+    for (let t of transforms) {
         // Grab the transform key and relevant function
-        const key = transforms[ruleSet].key;
-        const transform = transforms[ruleSet].fn;
+        const key = t.key;
+        const ruleSet = t.ruleSet;
+        const transform = t.fn;
 
         // Get rules from the set, based on the defined key
         let rules = ruleSet.get(key);
@@ -290,7 +293,7 @@ function doUpdate() {
 
     // MARK -- Formulate output / display
     forwardNodes.push(initState); // TODO remove this line, temporary
-    drawGraph(nodes, edges);
+    drawGraph(forwardNodes, forwardEdges);
 }
 
 function drawGraph(nodes, edges) {
@@ -339,9 +342,6 @@ function drawGraph(nodes, edges) {
             }
         ]
     });
-
-    // Nodes and edges need unique IDs
-    let id = 0;
 
     // Nodes
     for (let n of nodes) {
