@@ -2,6 +2,8 @@ function getInputElem() {
     return document.getElementById("inputArea");
 }
 
+const TAPE_BLANK = '_';
+
 // Executes once page loads
 window.onload = () => {
     // Set update button functionality
@@ -15,7 +17,7 @@ window.onload = () => {
 # a,1
 # 0,b
 # This means that if in state 'a' and we read a '1', write a '0' and move to state 'b'.
-# Use a dash '-' to indicate a blank.
+# Use a '` + TAPE_BLANK + `' to indicate a blank.
 
 # Syntax for movement rules:
 # b
@@ -108,7 +110,6 @@ function parseRules(lines) {
 }
 
 let globalId = 0;
-const TAPE_BLANK = '-';
 
 // Return a list of possible states from the current state
 function resolveStates(currentState, currentDepth, readWriteRules, movementRules) {
@@ -128,7 +129,7 @@ function resolveStates(currentState, currentDepth, readWriteRules, movementRules
     currentState.id = id;
     currentState.depth = currentDepth;
     // Copy of object in result
-    resultNodes.push({...currentState});
+    resultNodes.push(JSON.parse(JSON.stringify(currentState)));
 
     // Backup our initial values, to restore later
     const initState = currentState.state;
@@ -214,9 +215,9 @@ function resolveStates(currentState, currentDepth, readWriteRules, movementRules
                 });
 
             // Add to total result
-            resultNodes.push.apply(subResult.resultNodes);
-            resultEdges.push.apply(subResult.resultEdges);
-            resultEdges.push.apply(newEdges);
+            resultNodes.push(...subResult.resultNodes);
+            resultEdges.push(...subResult.resultEdges);
+            resultEdges.push(...newEdges);
 
             // Restore the state completely for next transformation in the loop
             currentState.tape = [...initTape];
@@ -237,7 +238,7 @@ function doUpdate() {
     // MARK -- Parse and validate input
 
     const tapeValue = document.getElementById("tape").value;
-    const stateIndex = document.getElementById("stateIndex").value;
+    let stateIndex = document.getElementById("stateIndex").value;
     const ruleText = getInputElem().value;
 
     // Validate tape input
@@ -248,8 +249,14 @@ function doUpdate() {
     }
 
     // Validate state index
-    if (!stateIndex || isNaN(stateIndex) || stateIndex < 0 || stateIndex >= tapeValue.length) {
-        alert("Error: initial state index should be in-bounds of the tape, and a number.");
+    if (!stateIndex || isNaN(stateIndex)) {
+        alert("Error: initial state index should be a number.");
+        return;
+    }
+
+    stateIndex = parseInt(stateIndex);
+    if (stateIndex < 0 || stateIndex >= tapeValue.length) {
+        alert("Error: initial state index should be in-bounds of the tape.");
         return;
     }
 
@@ -292,7 +299,6 @@ function doUpdate() {
     // Or, set some flag in resolveStates
 
     // MARK -- Formulate output / display
-    forwardNodes.push(initState); // TODO remove this line, temporary
     drawGraph(forwardNodes, forwardEdges);
 }
 
