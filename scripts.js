@@ -5,6 +5,7 @@ function getInputElem() {
 const TAPE_BLANK = '_';
 
 // Executes once page loads
+//TODO: Add comment supporting regular TM rules
 window.onload = () => {
     // Set update button functionality
     document.getElementById("update").onclick = doUpdate;
@@ -36,16 +37,18 @@ b
 `;
 };
 
+//letterRegex is useful outside of parseRules and it makese sense to define these all together
+const letterRegex = RegExp("[a-z]");
+const numRegex = RegExp("[01-]");
+const directionRegex = RegExp("[<>]");
+
+//TODO: parse standard rules and transform to bennett
 // Parse inputted rules, and checks for errors at the same time
 function parseRules(lines) {
     if (lines.length % 2 !== 0){
         alert("Error: incomplete rule pair detected.");
         return false;
     }
-
-    const letterRegex = RegExp("[a-z]");
-    const numRegex = RegExp("[01-]");
-    const directionRegex = RegExp("[<>]");
 
     let readWriteMap = new Map();
     let movementMap = new Map();
@@ -245,7 +248,8 @@ function doUpdate() {
     // MARK -- Parse and validate input
 
     const tapeValue = document.getElementById("tape").value;
-    let stateIndex = document.getElementById("stateIndex").value;
+	let initStateName = document.getElementById("initStateName").value;
+    let initStateIndex = document.getElementById("initStateIndex").value;
     const ruleText = getInputElem().value;
 
     // Validate tape input
@@ -255,14 +259,20 @@ function doUpdate() {
         return;
     }
 
-    // Validate state index
-    if (!stateIndex || isNaN(stateIndex)) {
+	//Validate initial state name
+    if (!initStateName || !letterRegex.test(initStateName) || (initStateName.length != 1)) {
+        alert("Error: initial state name should be a single lowercase letter.");
+        return;
+    }
+
+    // Validate initial state index
+    if (!initStateIndex || isNaN(initStateIndex)) {
         alert("Error: initial state index should be a number.");
         return;
     }
 
-    stateIndex = parseInt(stateIndex);
-    if (stateIndex < 0 || stateIndex >= tapeValue.length) {
+    initStateIndex = parseInt(initStateIndex);
+    if (initStateIndex < 0 || initStateIndex >= tapeValue.length) {
         alert("Error: initial state index should be in-bounds of the tape.");
         return;
     }
@@ -289,8 +299,8 @@ function doUpdate() {
     let tape = tapeValue.split("");
     const initState = {
         tape,
-        'state': 'a',
-        stateIndex
+        'state': initStateName,
+        'stateIndex': initStateIndex
     };
 
     // Now, in a recursive fashion, let us figure out all possible "forward" states from the "current"
