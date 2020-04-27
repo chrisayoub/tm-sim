@@ -127,10 +127,12 @@ let globalId = 0;
 function resolveStates(currentState, currentDepth, readWriteRules, movementRules) {
     const resultNodes = [];
     const resultEdges = [];
+    maxDepth = document.getElementById("maxLevel").value;   // maximum level displayed
+    minDepth = document.getElementById("minLevel").value;   // minimum level displayed
 
     // Limit on our depth here
-    // TODO we should have a UI control for this value to let the user limit as desired
-    if (currentDepth >= 5) {
+    // TODO: Implement minDepth
+    if (currentDepth > maxDepth) {
         return {
             resultNodes,
             resultEdges
@@ -234,7 +236,7 @@ function resolveStates(currentState, currentDepth, readWriteRules, movementRules
             resultNodes.push(...subResult.resultNodes);
             resultEdges.push(...subResult.resultEdges);
             resultEdges.push(...newEdges);
-
+            
             // Restore the state completely for next transformation in the loop
             currentState.tape = [...initTape];
             currentState.state = initState;
@@ -325,10 +327,35 @@ function doUpdate() {
             'background-opacity': '1',
         })
         .update();
+
+    // Resetting globalID to 0 for next run
+    globalId = 0;
 }
 
 // Draws the nodes/edges in a graph using a display layout based on BFS
 function drawGraph(nodes, edges) {
+    skipBy = parseInt(document.getElementById("slider").value);       // levels we should skip by
+
+    // Skipping levels based on user selection (slider value)
+    nodes = nodes.filter(node => node.depth % skipBy == 0);
+    console.log(nodes);
+
+    edges = edges.filter(e => e.source % skipBy == 0);
+    edges = edges.map(e => {
+        return {
+            id: e.id,
+            source: e.source,
+            target: e.target + skipBy - 1
+        }
+    }).filter(e => {
+        for(let n of nodes){
+            if(n.id == e.target){
+                return true;
+            }
+        }
+        return false;
+    });
+    
     // Function to create the text on a node
     const getNodeLbl = (tm) => {
         let result = tm.tape.join('') + "\n";
