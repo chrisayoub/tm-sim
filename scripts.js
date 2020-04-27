@@ -338,7 +338,6 @@ function drawGraph(nodes, edges) {
 
     // Skipping levels based on user selection (slider value)
     nodes = nodes.filter(node => node.depth % skipBy == 0);
-    console.log(nodes);
 
     edges = edges.filter(e => e.source % skipBy == 0);
     edges = edges.map(e => {
