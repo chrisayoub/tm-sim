@@ -357,8 +357,12 @@ function drawGraph(nodes, edges) {
     // Function to create the text on a node
     const getNodeLbl = (tm) => {
         let result = tm.tape.join('') + "\n";
-        result += ' '.repeat(tm.stateIndex) + tm.state + "\n";
-        result += "Level: " + tm.depth;
+
+        const MARK = '•';
+        const toEnd = tm.tape.length - tm.stateIndex - 1;
+        result += MARK.repeat(tm.stateIndex) + tm.state + MARK.repeat(toEnd) + "\n";
+
+        result += "Lvl: " + tm.depth;
         return result;
     };
 
@@ -369,7 +373,7 @@ function drawGraph(nodes, edges) {
         container: document.getElementById('content'),
         autounselectify: true, // Disable selection
         autoungrabify: true, // Disable grabbing
-        minZoom: 0.1, // Set zoom limits
+        minZoom: 0.5, // Set zoom limits
         maxZoom: 2,
         style: [
             {
