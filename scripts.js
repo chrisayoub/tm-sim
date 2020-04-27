@@ -11,9 +11,6 @@ const TAPE_BLANK = '_';
 
 // Executes once page loads
 window.onload = () => {
-    // Set update button functionality
-    document.getElementById("update").onclick = doUpdate;
-
     // Set default text of text area
     getInputElem().value =
 `# Commented-lines here are expressed with '#'
@@ -39,10 +36,10 @@ a,1
 b
 <,a
 `;
-    // Set initial level skip slider value
-    document.getElementById("sliderVal").innerHTML = document.getElementById("slider").value;
-};
 
+    // Set initial level skip slider value
+    updateSlider();
+};
 
 
 // Parse inputted rules, and checks for errors at the same time
@@ -124,11 +121,9 @@ let globalId = 0;
 
 // Return a list of possible states from the current state
 // This is a recursive function that uses backtracking to compute
-function resolveStates(currentState, currentDepth, readWriteRules, movementRules) {
+function resolveStates(currentState, currentDepth, readWriteRules, movementRules, minDepth, maxDepth) {
     const resultNodes = [];
     const resultEdges = [];
-    maxDepth = document.getElementById("maxLevel").value;   // maximum level displayed
-    minDepth = document.getElementById("minLevel").value;   // minimum level displayed
 
     // Limit on our depth here
     // TODO: Implement minDepth
@@ -139,8 +134,8 @@ function resolveStates(currentState, currentDepth, readWriteRules, movementRules
         };
     }
 
-    // Adorn extra properties needed for graph display
-    const id = globalId++; // Use global counter for unique IDs
+    // Adorn extra properties needed for graph display;
+    const id = globalId++;
     currentState.id = id;
     currentState.depth = currentDepth;
     // Place deep copy of object in result
@@ -219,8 +214,8 @@ function resolveStates(currentState, currentDepth, readWriteRules, movementRules
             transform(currentState, rule);
 
             // Try to recurse on this
-            const newDepth = currentDepth + 1;
-            const subResult = resolveStates(currentState, newDepth, readWriteRules, movementRules);
+            const newDepth = currentDepth + 1; // TODO for going backwards, should subtract rather than add
+            const subResult = resolveStates(currentState, newDepth, readWriteRules, movementRules, minDepth, maxDepth);
 
             // Calculate any edges
             const newEdges = subResult.resultNodes.filter(n => n.depth === newDepth)
@@ -304,10 +299,14 @@ function doUpdate() {
         stateIndex
     };
 
+    // Limits on recursion
+    const maxDepth = document.getElementById("maxLevel").value;   // maximum level displayed
+    const minDepth = document.getElementById("minLevel").value;   // minimum level displayed
+
     // Now, in a recursive fashion, let us figure out all possible "forward" states from the "current"
     // We will impose a temporary limit on the "depth".
     // We also need to note down a mapping of "edges".
-    const forwardResult = resolveStates(initState, 0, readWriteMap, movementMap);
+    const forwardResult = resolveStates(initState, 0, readWriteMap, movementMap, minDepth, maxDepth);
     const forwardNodes = forwardResult.resultNodes;
     const forwardEdges = forwardResult.resultEdges;
 
@@ -337,9 +336,9 @@ function drawGraph(nodes, edges) {
     skipBy = parseInt(document.getElementById("slider").value);       // levels we should skip by
 
     // Skipping levels based on user selection (slider value)
-    nodes = nodes.filter(node => node.depth % skipBy == 0);
+    nodes = nodes.filter(node => node.depth % skipBy === 0);
 
-    edges = edges.filter(e => e.source % skipBy == 0);
+    edges = edges.filter(e => e.source % skipBy === 0);
     edges = edges.map(e => {
         return {
             id: e.id,
@@ -347,8 +346,8 @@ function drawGraph(nodes, edges) {
             target: e.target + skipBy - 1
         }
     }).filter(e => {
-        for(let n of nodes){
-            if(n.id == e.target){
+        for (let n of nodes){
+            if (n.id === e.target){
                 return true;
             }
         }
