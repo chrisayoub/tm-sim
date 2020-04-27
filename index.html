@@ -32,6 +32,18 @@
                     Initial state index (state 'a'):
                     <input id="stateIndex" type="text" placeholder="0, 1, 2, etc." value="0">
                 </label>
+                <br/>
+                <label>
+                    Level range:
+                    min <input id="minLevel" type="text" placeholder="-5" value="-5">
+                    max <input id="maxLevel" type="text" placeholder="5" value="5">
+                </label>
+                <br/>
+                <lable>
+                    Skip by:
+                    <input id="slider" type="range" min="1" max="10" value="1" oninput="updateSlider()">
+                    <span id="sliderVal"></span> level(s)
+                </lable>
                 <br/><br/>
                 <label>
                     TM rules input:

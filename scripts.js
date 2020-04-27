@@ -2,6 +2,11 @@ function getInputElem() {
     return document.getElementById("inputArea");
 }
 
+// Updates level skip slider
+function updateSlider() {
+    document.getElementById("sliderVal").innerHTML = document.getElementById("slider").value;
+}
+
 const TAPE_BLANK = '_';
 
 // Executes once page loads
@@ -34,7 +39,11 @@ a,1
 b
 <,a
 `;
+    // Set initial level skip slider value
+    document.getElementById("sliderVal").innerHTML = document.getElementById("slider").value;
 };
+
+
 
 // Parse inputted rules, and checks for errors at the same time
 function parseRules(lines) {
