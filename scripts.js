@@ -358,6 +358,9 @@ function drawGraph(nodes, edges) {
     const getNodeLbl = (tm) => {
         let result = tm.tape.join('') + "\n";
 
+        const HEAD = '^';
+        result += ' '.repeat(tm.stateIndex) + HEAD + "\n";
+
         const MARK = '•';
         const toEnd = tm.tape.length - tm.stateIndex - 1;
         result += MARK.repeat(tm.stateIndex) + tm.state + MARK.repeat(toEnd) + "\n";
