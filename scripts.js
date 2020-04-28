@@ -159,14 +159,11 @@ function resolveStates(currentConfig, currentDepth, readWriteRules, movementRule
         };
     }
 
-    let id;
-
     // Adorn extra properties needed for graph display
-    id = globalId++; // Use global counter for unique IDs
-
-
+    let id = globalId++; // Use global counter for unique IDs
     currentConfig.id = id;
     currentConfig.depth = currentDepth;
+    
     // Place deep copy of object in result
     //Don't duplicate the 0th node
     if(!(currentDepth == 0 && !forward)) {
@@ -283,7 +280,6 @@ function resolveStates(currentConfig, currentDepth, readWriteRules, movementRule
             resultNodes.push(...subResult.resultNodes);
             resultEdges.push(...subResult.resultEdges);
             resultEdges.push(...newEdges);
-
 
             // Restore the config completely for next transformation in the loop
             currentConfig.tape = [...initTape];
