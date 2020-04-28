@@ -28,7 +28,7 @@ window.onload = () => {
 # This means that if in state 'b', move left and enter state 'a'.
 # Possible movements are left '<' and right '>'
 
-# Note that the initial state is always 'a'. Use the state alphabet of '[a-z]'
+# Use the state alphabet of '[a-z]'
 # This example is included below, feel free to delete.
 
 a,1
@@ -47,8 +47,9 @@ const letterRegex = RegExp("[a-z]");
 const numRegex = RegExp("[01-]");
 const directionRegex = RegExp("[<>]");
 
-//TODO: parse standard rules and transform to bennett
+
 // Parse inputted rules, and checks for errors at the same time
+// TODO: Could parse standard rules and transform to bennett
 function parseRules(lines) {
     if (lines.length % 2 !== 0){
         alert("Error: incomplete rule pair detected.");
@@ -137,9 +138,9 @@ function parseRules(lines) {
     }
 }
 
-//Helper function to return the opposite of left/right move
+// Helper function to return the opposite of left/right move
 function getReverseMove(move) {
-    if(move === '>') {
+    if (move === '>') {
         return '<';
     } else {
         return '>';
@@ -164,13 +165,13 @@ function resolveStates(currentConfig, currentDepth, readWriteRules, movementRule
     }
 
     // Adorn extra properties needed for graph display
-    let id = globalId++; // Use global counter for unique IDs
+    const id = globalId++; // Use global counter for unique IDs
     currentConfig.id = id;
     currentConfig.depth = currentDepth;
 
     // Place deep copy of object in result
     //Don't duplicate the 0th node
-    if(!(currentDepth == 0 && !forward)) {
+    if(!(currentDepth === 0 && !forward)) {
         resultNodes.push(JSON.parse(JSON.stringify(currentConfig)));
     }
 
@@ -259,13 +260,13 @@ function resolveStates(currentConfig, currentDepth, readWriteRules, movementRule
             // Calculate any edges
             const newEdges = subResult.resultNodes.filter(n => n.depth === newDepth)
                 .map(n => {
-                    if(forward) {
+                    if (forward) {
                         return {
                             id: globalId++,
                             source: id,
                             target: n.id
                         }
-                    } else if (currentDepth == 0 && !forward) {
+                    } else if (currentDepth === 0 && !forward) {
                         return {
                             id: globalId++,
                             source: n.id,
@@ -303,11 +304,11 @@ function resolveStates(currentConfig, currentDepth, readWriteRules, movementRule
 function doUpdate() {
     // MARK -- Parse and validate input
 
-    //must restart counting
+    // Must restart counting
     globalId = 0;
 
     const tapeValue = document.getElementById("tape").value;
-	  let initState = document.getElementById("initState").value;
+    const initState = document.getElementById("initState").value;
     let initStateIndex = document.getElementById("initStateIndex").value;
     const ruleText = getInputElem().value;
 
@@ -318,8 +319,8 @@ function doUpdate() {
         return;
     }
 
-	//Validate initial state name
-    if (!initState || !letterRegex.test(initState) || (initState.length != 1)) {
+	// Validate initial state name
+    if (!initState || !letterRegex.test(initState) || (initState.length !== 1)) {
         alert("Error: initial state should be a single lowercase letter.");
         return;
     }
@@ -355,8 +356,6 @@ function doUpdate() {
     const reverseMovementMap = result.reverseMovementMap;
 
     // Represent current tape with array
-    // Initial position is index `stateIndex`, initial state is 'a'
-    // TODO instead of assuming 'a', let's take this in as user input
     let tape = tapeValue.split("");
     const initConfig = {
         tape,
@@ -376,15 +375,9 @@ function doUpdate() {
     const forwardEdges = forwardResult.resultEdges;
 
     // Now, we will reverse the rules in the maps and recursively get the backward states
-    // TODO implement this!
-    // TODO for the resulting edges, will need to flip them
-    // Or, set some flag in resolveStates
     const reverseResult = resolveStates(initConfig, 0, reverseReadWriteMap, reverseMovementMap, minDepth, maxDepth, false);
     const reverseNodes = reverseResult.resultNodes;
     const reverseEdges = reverseResult.resultEdges;
-
-    //Because there's not a good convenient way to merge maps in javascript
-
 
     // MARK -- Formulate output / display
     const cy = drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges);
@@ -397,16 +390,15 @@ function doUpdate() {
             'background-opacity': '1',
         })
         .update();
-
-    // Resetting globalID to 0 for next run
-    globalId = 0;
 }
 
 // Draws the nodes/edges in a graph using a display layout based on BFS
 function drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges) {
-    skipBy = parseInt(document.getElementById("slider").value);       // levels we should skip by
+    // Levels we should skip by
+    const skipBy = parseInt(document.getElementById("slider").value);
 
     // Skipping levels based on user selection (slider value)
+    // TODO need to fix this code...
     forwardNodes = forwardNodes.filter(node => node.depth % skipBy === 0);
     reverseNodes = reverseNodes.filter(node => node.depth % skipBy === 0);
 
@@ -441,6 +433,7 @@ function drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges) {
         }
         return false;
     });
+    // TODO end fix this code
 
     // Function to create the text on a node
     const getNodeLbl = (tm) => {
@@ -464,7 +457,7 @@ function drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges) {
         container: document.getElementById('content'),
         autounselectify: true, // Disable selection
         autoungrabify: true, // Disable grabbing
-        minZoom: 0.5, // Set zoom limits
+        minZoom: 0.01, // Set zoom limits
         maxZoom: 2,
         style: [
             {
