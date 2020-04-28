@@ -53,6 +53,9 @@ function parseRules(lines) {
     let readWriteMap = new Map();
     let movementMap = new Map();
 
+    let reverseReadWriteMap = new Map();
+    let reverseMovementMap = new Map();
+
     for (let i = 0; i < lines.length - 1; i += 2) {
         const firstLine = lines[i];
         const secondLine = lines[i + 1];
@@ -86,12 +89,20 @@ function parseRules(lines) {
                 movementMap.set(firstLine, []);
             }
             movementMap.get(firstLine).push([move, destSymbol]);
+
+            // Map the key to an array of possible transitions but in reverse
+            if (!reverseMovementMap.get(destSymbol)) {
+                reverseMovementMap.set(destSymbol, []);
+            }
+            reverseMovementMap.get(destSymbol).push([getReverseMove(move), startSymbol])
+
         } else {
             // R/W rule
             const startSymbol = firstToks[0];
             const readBit = firstToks[1];
             const writeBit = secondToks[0];
             const destSymbol = secondToks[1];
+            const reverseLine = secondToks[1] + ',' + secondToks[0];
 
             if (!letterRegex.test(startSymbol) || !letterRegex.test(destSymbol) ||
                 !numRegex.test(readBit) || !numRegex.test(writeBit)) {
@@ -104,12 +115,29 @@ function parseRules(lines) {
                 readWriteMap.set(firstLine, []);
             }
             readWriteMap.get(firstLine).push([writeBit, destSymbol]);
+
+            // Map the key to an array of possible transitions but in reverse
+            if (!reverseReadWriteMap.get(reverseLine)) {
+                reverseReadWriteMap.set(reverseLine, []);
+            }
+            reverseReadWriteMap.get(reverseLine).push([readBit, startSymbol]);
         }
     }
 
     return {
         readWriteMap,
-        movementMap
+        movementMap,
+        reverseReadWriteMap,
+        reverseMovementMap
+    }
+}
+
+//Helper function to return the opposite of left/right move
+function getReverseMove(move) {
+    if(move === '>') {
+        return '<';
+    } else {
+        return '>';
     }
 }
 
@@ -118,30 +146,37 @@ let globalId = 0;
 
 // Return a list of possible states from the current state
 // This is a recursive function that uses backtracking to compute
-function resolveStates(currentState, currentDepth, readWriteRules, movementRules) {
+function resolveStates(currentConfig, currentDepth, readWriteRules, movementRules, forward) {
     const resultNodes = [];
     const resultEdges = [];
 
     // Limit on our depth here
     // TODO we should have a UI control for this value to let the user limit as desired
-    if (currentDepth >= 5) {
+    if ((forward && currentDepth >= 5) || (!forward && currentDepth <= -5)) {
         return {
             resultNodes,
             resultEdges
         };
     }
 
+    let id;
+
     // Adorn extra properties needed for graph display
-    const id = globalId++; // Use global counter for unique IDs
-    currentState.id = id;
-    currentState.depth = currentDepth;
+    id = globalId++; // Use global counter for unique IDs
+
+
+    currentConfig.id = id;
+    currentConfig.depth = currentDepth;
     // Place deep copy of object in result
-    resultNodes.push(JSON.parse(JSON.stringify(currentState)));
+    //Don't duplicate the 0th node
+    if(!(currentDepth == 0 && !forward)) {
+        resultNodes.push(JSON.parse(JSON.stringify(currentConfig)));
+    }
 
     // Backup our initial values, to restore later
-    const initState = currentState.state;
-    const initIndex = currentState.stateIndex;
-    const initTape = [...currentState.tape];
+    const initState = currentConfig.state;
+    const initIndex = currentConfig.stateIndex;
+    const initTape = [...currentConfig.tape];
     const initBit = initTape[initIndex];
 
     // Two possible rule types...
@@ -208,19 +243,39 @@ function resolveStates(currentState, currentDepth, readWriteRules, movementRules
         // For all rules that apply...
         for (let rule of rules) {
             // Apply the transition given
-            transform(currentState, rule);
+            transform(currentConfig, rule);
 
             // Try to recurse on this
-            const newDepth = currentDepth + 1;
-            const subResult = resolveStates(currentState, newDepth, readWriteRules, movementRules);
+            let newDepth
+
+            if(forward) {
+                newDepth = currentDepth + 1;
+            } else {
+                newDepth = currentDepth - 1;
+            }
+            const subResult = resolveStates(currentConfig, newDepth, readWriteRules, movementRules, forward);
 
             // Calculate any edges
             const newEdges = subResult.resultNodes.filter(n => n.depth === newDepth)
                 .map(n => {
-                    return {
-                        id: globalId++,
-                        source: id,
-                        target: n.id
+                    if(forward) {
+                        return {
+                            id: globalId++,
+                            source: id,
+                            target: n.id
+                        }
+                    } else if (currentDepth == 0 && !forward) {
+                        return {
+                            id: globalId++,
+                            source: n.id,
+                            target: 0
+                        }
+                    } else {
+                        return {
+                            id: globalId++,
+                            source: n.id,
+                            target: id
+                        }
                     }
                 });
 
@@ -229,10 +284,11 @@ function resolveStates(currentState, currentDepth, readWriteRules, movementRules
             resultEdges.push(...subResult.resultEdges);
             resultEdges.push(...newEdges);
 
-            // Restore the state completely for next transformation in the loop
-            currentState.tape = [...initTape];
-            currentState.state = initState;
-            currentState.stateIndex = initIndex;
+
+            // Restore the config completely for next transformation in the loop
+            currentConfig.tape = [...initTape];
+            currentConfig.state = initState;
+            currentConfig.stateIndex = initIndex;
         }
     }
 
@@ -247,8 +303,11 @@ function resolveStates(currentState, currentDepth, readWriteRules, movementRules
 function doUpdate() {
     // MARK -- Parse and validate input
 
+    //must restart counting
+    globalId = 0;
+
     const tapeValue = document.getElementById("tape").value;
-	let initStateName = document.getElementById("initStateName").value;
+	  let initState = document.getElementById("initState").value;
     let initStateIndex = document.getElementById("initStateIndex").value;
     const ruleText = getInputElem().value;
 
@@ -260,8 +319,8 @@ function doUpdate() {
     }
 
 	//Validate initial state name
-    if (!initStateName || !letterRegex.test(initStateName) || (initStateName.length != 1)) {
-        alert("Error: initial state name should be a single lowercase letter.");
+    if (!initState || !letterRegex.test(initState) || (initState.length != 1)) {
+        alert("Error: initial state should be a single lowercase letter.");
         return;
     }
 
@@ -292,21 +351,23 @@ function doUpdate() {
     // Saving TM rules in read/write and movement maps
     const readWriteMap = result.readWriteMap;
     const movementMap = result.movementMap;
+    const reverseReadWriteMap = result.reverseReadWriteMap;
+    const reverseMovementMap = result.reverseMovementMap;
 
     // Represent current tape with array
     // Initial position is index `stateIndex`, initial state is 'a'
     // TODO instead of assuming 'a', let's take this in as user input
     let tape = tapeValue.split("");
-    const initState = {
+    const initConfig = {
         tape,
-        'state': initStateName,
+        'state': initState,
         'stateIndex': initStateIndex
     };
 
     // Now, in a recursive fashion, let us figure out all possible "forward" states from the "current"
     // We will impose a temporary limit on the "depth".
     // We also need to note down a mapping of "edges".
-    const forwardResult = resolveStates(initState, 0, readWriteMap, movementMap);
+    const forwardResult = resolveStates(initConfig, 0, readWriteMap, movementMap, true);
     const forwardNodes = forwardResult.resultNodes;
     const forwardEdges = forwardResult.resultEdges;
 
@@ -314,9 +375,15 @@ function doUpdate() {
     // TODO implement this!
     // TODO for the resulting edges, will need to flip them
     // Or, set some flag in resolveStates
+    const reverseResult = resolveStates(initConfig, 0, reverseReadWriteMap, reverseMovementMap, false);
+    const reverseNodes = reverseResult.resultNodes;
+    const reverseEdges = reverseResult.resultEdges;
+
+    //Because there's not a good convenient way to merge maps in javascript
+
 
     // MARK -- Formulate output / display
-    const cy = drawGraph(forwardNodes, forwardEdges);
+    const cy = drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges);
 
     // Special styles / coloring can be applied on selected nodes
     const initNodeId = forwardNodes[0].id;
@@ -329,7 +396,7 @@ function doUpdate() {
 }
 
 // Draws the nodes/edges in a graph using a display layout based on BFS
-function drawGraph(nodes, edges) {
+function drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges) {
     // Function to create the text on a node
     const getNodeLbl = (tm) => {
         let result = tm.tape.join('') + "\n";
@@ -383,7 +450,15 @@ function drawGraph(nodes, edges) {
     });
 
     // Nodes
-    for (let n of nodes) {
+    for (let n of reverseNodes) {
+        cy.add({
+            data: {
+                id: n.id,
+                lbl: getNodeLbl(n),
+            }
+        })
+    }
+    for (let n of forwardNodes) {
         cy.add({
             data: {
                 id: n.id,
@@ -392,12 +467,19 @@ function drawGraph(nodes, edges) {
         })
     }
 
+
     // Edges
-    for (let e of edges) {
+    for (let e of reverseEdges) {
         cy.add({
             data: e
         })
     }
+    for (let e of forwardEdges) {
+        cy.add({
+            data: e
+        })
+    }
+
 
     // DAG layout from left-to-right
     cy.layout({
