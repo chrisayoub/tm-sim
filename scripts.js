@@ -2,14 +2,16 @@ function getInputElem() {
     return document.getElementById("inputArea");
 }
 
+// Updates level skip slider
+function updateSlider() {
+    document.getElementById("sliderVal").innerHTML = document.getElementById("slider").value;
+}
+
 const TAPE_BLANK = '_';
 
 // Executes once page loads
 //TODO: Add comment supporting regular TM rules
 window.onload = () => {
-    // Set update button functionality
-    document.getElementById("update").onclick = doUpdate;
-
     // Set default text of text area
     getInputElem().value =
 `# Commented-lines here are expressed with '#'
@@ -35,6 +37,9 @@ a,1
 b
 <,a
 `;
+
+    // Set initial level skip slider value
+    updateSlider();
 };
 
 //letterRegex is useful outside of parseRules and it makese sense to define these all together
@@ -146,13 +151,12 @@ let globalId = 0;
 
 // Return a list of possible states from the current state
 // This is a recursive function that uses backtracking to compute
-function resolveStates(currentConfig, currentDepth, readWriteRules, movementRules, forward) {
+function resolveStates(currentConfig, currentDepth, readWriteRules, movementRules, minDepth, maxDepth, forward) {
     const resultNodes = [];
     const resultEdges = [];
 
     // Limit on our depth here
-    // TODO we should have a UI control for this value to let the user limit as desired
-    if ((forward && currentDepth >= 5) || (!forward && currentDepth <= -5)) {
+    if ((forward && currentDepth > maxDepth) || (!forward && currentDepth < minDepth)) {
         return {
             resultNodes,
             resultEdges
@@ -163,7 +167,7 @@ function resolveStates(currentConfig, currentDepth, readWriteRules, movementRule
     let id = globalId++; // Use global counter for unique IDs
     currentConfig.id = id;
     currentConfig.depth = currentDepth;
-    
+
     // Place deep copy of object in result
     //Don't duplicate the 0th node
     if(!(currentDepth == 0 && !forward)) {
@@ -250,7 +254,7 @@ function resolveStates(currentConfig, currentDepth, readWriteRules, movementRule
             } else {
                 newDepth = currentDepth - 1;
             }
-            const subResult = resolveStates(currentConfig, newDepth, readWriteRules, movementRules, forward);
+            const subResult = resolveStates(currentConfig, newDepth, readWriteRules, movementRules, minDepth, maxDepth, forward);
 
             // Calculate any edges
             const newEdges = subResult.resultNodes.filter(n => n.depth === newDepth)
@@ -360,10 +364,14 @@ function doUpdate() {
         'stateIndex': initStateIndex
     };
 
+    // Limits on recursion
+    const maxDepth = document.getElementById("maxLevel").value;   // maximum level displayed
+    const minDepth = document.getElementById("minLevel").value;   // minimum level displayed
+
     // Now, in a recursive fashion, let us figure out all possible "forward" states from the "current"
     // We will impose a temporary limit on the "depth".
     // We also need to note down a mapping of "edges".
-    const forwardResult = resolveStates(initConfig, 0, readWriteMap, movementMap, true);
+    const forwardResult = resolveStates(initConfig, 0, readWriteMap, movementMap, minDepth, maxDepth, true);
     const forwardNodes = forwardResult.resultNodes;
     const forwardEdges = forwardResult.resultEdges;
 
@@ -371,7 +379,7 @@ function doUpdate() {
     // TODO implement this!
     // TODO for the resulting edges, will need to flip them
     // Or, set some flag in resolveStates
-    const reverseResult = resolveStates(initConfig, 0, reverseReadWriteMap, reverseMovementMap, false);
+    const reverseResult = resolveStates(initConfig, 0, reverseReadWriteMap, reverseMovementMap, minDepth, maxDepth, false);
     const reverseNodes = reverseResult.resultNodes;
     const reverseEdges = reverseResult.resultEdges;
 
@@ -389,15 +397,63 @@ function doUpdate() {
             'background-opacity': '1',
         })
         .update();
+
+    // Resetting globalID to 0 for next run
+    globalId = 0;
 }
 
 // Draws the nodes/edges in a graph using a display layout based on BFS
 function drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges) {
+    skipBy = parseInt(document.getElementById("slider").value);       // levels we should skip by
+
+    // Skipping levels based on user selection (slider value)
+    forwardNodes = forwardNodes.filter(node => node.depth % skipBy === 0);
+    reverseNodes = reverseNodes.filter(node => node.depth % skipBy === 0);
+
+    forwardEdges = forwardEdges.filter(e => e.source % skipBy === 0);
+    forwardEdges = forwardEdges.map(e => {
+        return {
+            id: e.id,
+            source: e.source,
+            target: e.target + skipBy - 1
+        }
+    }).filter(e => {
+        for (let n of forwardNodes){
+            if (n.id === e.target){
+                return true;
+            }
+        }
+        return false;
+    });
+
+    reverseEdges = reverseEdges.filter(e => e.source % skipBy === 0);
+    reverseEdges = reverseEdges.map(e => {
+        return {
+            id: e.id,
+            source: e.source,
+            target: e.target + skipBy - 1
+        }
+    }).filter(e => {
+        for (let n of reverseNodes){
+            if ((n.id === e.target) || (0 === e.target)){
+                return true;
+            }
+        }
+        return false;
+    });
+
     // Function to create the text on a node
     const getNodeLbl = (tm) => {
         let result = tm.tape.join('') + "\n";
-        result += ' '.repeat(tm.stateIndex) + tm.state + "\n";
-        result += "Level: " + tm.depth;
+
+        const HEAD = '^';
+        result += ' '.repeat(tm.stateIndex) + HEAD + "\n";
+
+        const MARK = '•';
+        const toEnd = tm.tape.length - tm.stateIndex - 1;
+        result += MARK.repeat(tm.stateIndex) + tm.state + MARK.repeat(toEnd) + "\n";
+
+        result += "Lvl: " + tm.depth;
         return result;
     };
 
@@ -408,7 +464,7 @@ function drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges) {
         container: document.getElementById('content'),
         autounselectify: true, // Disable selection
         autoungrabify: true, // Disable grabbing
-        minZoom: 0.1, // Set zoom limits
+        minZoom: 0.5, // Set zoom limits
         maxZoom: 2,
         style: [
             {

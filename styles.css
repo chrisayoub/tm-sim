@@ -11,3 +11,10 @@
     margin-bottom: 4px;
     background-color: #DDE6F8;
 }
+
+#slider {
+    background: grey;
+    -webkit-appearance: none;
+    margin-top: 8px;
+    height: 8px;
+}

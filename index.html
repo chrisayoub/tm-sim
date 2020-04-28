@@ -21,7 +21,7 @@
 
         <!-- Input section -->
         <div id="input">
-            <button id="update">Update Visualization</button>
+            <button id="update" onclick="doUpdate()">Update Visualization</button>
             <div>
                 <label>
                     Initial TM tape config (Use 0,1, _):
@@ -36,6 +36,18 @@
                 <label>
                     Initial state index:
                     <input id="initStateIndex" type="text" placeholder="0, 1, 2, etc." value="0">
+                </label>
+                <br/>
+                <label>
+                    Level range:
+                    min <input id="minLevel" type="text" placeholder="-5" value="-5">
+                    max <input id="maxLevel" type="text" placeholder="5" value="5">
+                </label>
+                <br/>
+                <label>
+                    Skip by:
+                    <input id="slider" type="range" min="1" max="10" value="1" oninput="updateSlider()">
+                    <span id="sliderVal"></span> level(s)
                 </label>
                 <br/><br/>
                 <label>
