@@ -152,12 +152,12 @@ let globalId = 0;
 
 // Return a list of possible states from the current state
 // This is a recursive function that uses backtracking to compute
-function resolveStates(currentConfig, currentDepth, readWriteRules, movementRules, minDepth, maxDepth, forward) {
+function resolveStates(currentConfig, currentDepth, readWriteRules, movementRules, depthLimit, forward, skipBy) {
     const resultNodes = [];
     const resultEdges = [];
 
     // Limit on our depth here
-    if ((forward && currentDepth > maxDepth) || (!forward && currentDepth < minDepth)) {
+    if ((forward && currentDepth > depthLimit) || (!forward && currentDepth < depthLimit)) {
         return {
             resultNodes,
             resultEdges
@@ -170,8 +170,8 @@ function resolveStates(currentConfig, currentDepth, readWriteRules, movementRule
     currentConfig.depth = currentDepth;
 
     // Place deep copy of object in result
-    //Don't duplicate the 0th node
-    if(!(currentDepth === 0 && !forward)) {
+    // Don't duplicate the 0th node
+    if (!(currentDepth === 0 && !forward)) {
         resultNodes.push(JSON.parse(JSON.stringify(currentConfig)));
     }
 
@@ -248,17 +248,18 @@ function resolveStates(currentConfig, currentDepth, readWriteRules, movementRule
             transform(currentConfig, rule);
 
             // Try to recurse on this
-            let newDepth
-
-            if(forward) {
+            let newDepth;
+            if (forward) {
                 newDepth = currentDepth + 1;
             } else {
                 newDepth = currentDepth - 1;
             }
-            const subResult = resolveStates(currentConfig, newDepth, readWriteRules, movementRules, minDepth, maxDepth, forward);
+            const subResult = resolveStates(currentConfig, newDepth, readWriteRules, movementRules, depthLimit, forward, skipBy);
 
             // Calculate any edges
-            const newEdges = subResult.resultNodes.filter(n => n.depth === newDepth)
+            // Need to account for skipBy parameter
+            const skipByDepthLimit = Math.abs(currentDepth) + skipBy;
+            const newEdges = subResult.resultNodes.filter(n => Math.abs(n.depth) === skipByDepthLimit)
                 .map(n => {
                     if (forward) {
                         return {
@@ -280,9 +281,10 @@ function resolveStates(currentConfig, currentDepth, readWriteRules, movementRule
                         }
                     }
                 });
+            const newNodes = subResult.resultNodes.filter(n => n.depth % skipBy === 0);
 
             // Add to total result
-            resultNodes.push(...subResult.resultNodes);
+            resultNodes.push(...newNodes);
             resultEdges.push(...subResult.resultEdges);
             resultEdges.push(...newEdges);
 
@@ -367,20 +369,23 @@ function doUpdate() {
     const maxDepth = document.getElementById("maxLevel").value;   // maximum level displayed
     const minDepth = document.getElementById("minLevel").value;   // minimum level displayed
 
+    // Levels we should skip by
+    const skipBy = parseInt(document.getElementById("slider").value);
+
     // Now, in a recursive fashion, let us figure out all possible "forward" states from the "current"
     // We will impose a temporary limit on the "depth".
     // We also need to note down a mapping of "edges".
-    const forwardResult = resolveStates(initConfig, 0, readWriteMap, movementMap, minDepth, maxDepth, true);
+    const forwardResult = resolveStates(initConfig, 0, readWriteMap, movementMap, maxDepth, true, skipBy);
     const forwardNodes = forwardResult.resultNodes;
     const forwardEdges = forwardResult.resultEdges;
 
     // Now, we will reverse the rules in the maps and recursively get the backward states
-    const reverseResult = resolveStates(initConfig, 0, reverseReadWriteMap, reverseMovementMap, minDepth, maxDepth, false);
+    const reverseResult = resolveStates(initConfig, 0, reverseReadWriteMap, reverseMovementMap, minDepth, false, skipBy);
     const reverseNodes = reverseResult.resultNodes;
     const reverseEdges = reverseResult.resultEdges;
 
     // MARK -- Formulate output / display
-    const cy = drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges);
+    const cy = drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges, skipBy);
 
     // Special styles / coloring can be applied on selected nodes
     const initNodeId = forwardNodes[0].id;
@@ -393,48 +398,7 @@ function doUpdate() {
 }
 
 // Draws the nodes/edges in a graph using a display layout based on BFS
-function drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges) {
-    // Levels we should skip by
-    const skipBy = parseInt(document.getElementById("slider").value);
-
-    // Skipping levels based on user selection (slider value)
-    // TODO need to fix this code...
-    forwardNodes = forwardNodes.filter(node => node.depth % skipBy === 0);
-    reverseNodes = reverseNodes.filter(node => node.depth % skipBy === 0);
-
-    forwardEdges = forwardEdges.filter(e => e.source % skipBy === 0);
-    forwardEdges = forwardEdges.map(e => {
-        return {
-            id: e.id,
-            source: e.source,
-            target: e.target + skipBy - 1
-        }
-    }).filter(e => {
-        for (let n of forwardNodes){
-            if (n.id === e.target){
-                return true;
-            }
-        }
-        return false;
-    });
-
-    reverseEdges = reverseEdges.filter(e => e.source % skipBy === 0);
-    reverseEdges = reverseEdges.map(e => {
-        return {
-            id: e.id,
-            source: e.source,
-            target: e.target + skipBy - 1
-        }
-    }).filter(e => {
-        for (let n of reverseNodes){
-            if ((n.id === e.target) || (0 === e.target)){
-                return true;
-            }
-        }
-        return false;
-    });
-    // TODO end fix this code
-
+function drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges, skipBy) {
     // Function to create the text on a node
     const getNodeLbl = (tm) => {
         let result = tm.tape.join('') + "\n";
@@ -449,6 +413,9 @@ function drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges) {
         result += "Lvl: " + tm.depth;
         return result;
     };
+
+    // Lets us set edge labels for skipping
+    const edgeLabel = skipBy > 1 ? skipBy : '';
 
     // Setup the graph
     const boxTextBorderColor = "#332648";
@@ -488,7 +455,9 @@ function drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges) {
                     'target-arrow-shape': 'triangle',
                     'width': 5,
                     'target-arrow-color': arrowColor,
-                    'line-color': arrowColor
+                    'line-color': arrowColor,
+                    label: edgeLabel, // Label on skipping edges
+                    'text-margin-y': -12,
                 }
             }
         ]
