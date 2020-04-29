@@ -424,8 +424,12 @@ function doUpdate() {
     const reverseNodes = reverseResult.resultNodes;
     const reverseEdges = reverseResult.resultEdges;
 
+    // Combine resulting arrays
+    const nodes = forwardNodes.concat(reverseNodes);
+    const edges = forwardEdges.concat(reverseEdges);
+
     // MARK -- Formulate output / display
-    const cy = drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges, skipBy);
+    const cy = drawGraph(nodes, edges, skipBy);
 
     // Special styles / coloring can be applied on selected nodes
     const initNodeId = forwardNodes[0].id;
@@ -438,7 +442,7 @@ function doUpdate() {
 }
 
 // Draws the nodes/edges in a graph using a display layout based on BFS
-function drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges, skipBy) {
+function drawGraph(nodes, edges, skipBy) {
     // Function to create the text on a node
     const getNodeLbl = (tm) => {
         let result = tm.tape.join('') + "\n";
@@ -504,7 +508,7 @@ function drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges, skipB
     });
 
     // Nodes
-    for (let n of reverseNodes) {
+    for (let n of nodes) {
         cy.add({
             data: {
                 id: n.id,
@@ -512,28 +516,13 @@ function drawGraph(forwardNodes, forwardEdges, reverseNodes, reverseEdges, skipB
             }
         })
     }
-    for (let n of forwardNodes) {
-        cy.add({
-            data: {
-                id: n.id,
-                lbl: getNodeLbl(n),
-            }
-        })
-    }
-
 
     // Edges
-    for (let e of reverseEdges) {
+    for (let e of edges) {
         cy.add({
             data: e
         })
     }
-    for (let e of forwardEdges) {
-        cy.add({
-            data: e
-        })
-    }
-
 
     // DAG layout from left-to-right
     cy.layout({
