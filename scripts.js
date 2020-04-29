@@ -441,23 +441,33 @@ function doUpdate() {
         .update();
 }
 
+// Function to create the text on a node
+const HEAD = '^';
+const MARK = '•';
+
+function renderNodeLabel(config) {
+    const tape = config.tape;
+    const stateIndex = config.stateIndex;
+    const state = config.state;
+    const depth = config.depth;
+
+    // Tape
+    let result = tape.join('') + "\n";
+
+    // Carat pointing at position
+    result += ' '.repeat(stateIndex) + HEAD + "\n";
+
+    // Line indicating all of the spaces
+    const toEnd = tape.length - stateIndex - 1;
+    result += MARK.repeat(stateIndex) + state + MARK.repeat(toEnd) + "\n";
+
+    // Depth
+    result += "Lvl: " + depth;
+    return result;
+}
+
 // Draws the nodes/edges in a graph using a display layout based on BFS
 function drawGraph(nodes, edges, skipBy) {
-    // Function to create the text on a node
-    const getNodeLbl = (tm) => {
-        let result = tm.tape.join('') + "\n";
-
-        const HEAD = '^';
-        result += ' '.repeat(tm.stateIndex) + HEAD + "\n";
-
-        const MARK = '•';
-        const toEnd = tm.tape.length - tm.stateIndex - 1;
-        result += MARK.repeat(tm.stateIndex) + tm.state + MARK.repeat(toEnd) + "\n";
-
-        result += "Lvl: " + tm.depth;
-        return result;
-    };
-
     // Lets us set edge labels for skipping
     const edgeLabel = skipBy > 1 ? skipBy : '';
 
@@ -512,7 +522,7 @@ function drawGraph(nodes, edges, skipBy) {
         cy.add({
             data: {
                 id: n.id,
-                lbl: getNodeLbl(n),
+                lbl: renderNodeLabel(n),
             }
         })
     }
