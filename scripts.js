@@ -150,148 +150,188 @@ function getReverseMove(move) {
 // Global ID used for nodes, edges
 let globalId = 0;
 
+// Defines a move transformation
+function doMoveTransform(toChange, rule) {
+    const initIndex = toChange.stateIndex;
+    const move = rule[0];
+    const destState = rule[1];
+
+    toChange.state = destState;
+    if (move === '<') {
+        // Move left
+        if (initIndex === 0) {
+            // Add blank to front if at left end of tape
+            toChange.tape.unshift(TAPE_BLANK);
+        } else {
+            // Adjust index only if did not add to front of list
+            toChange.stateIndex = initIndex - 1;
+        }
+    } else if (move === '>') {
+        // Move right
+        if (initIndex === toChange.tape.length - 1) {
+            // Add blank to end if at right end of tape
+            toChange.tape.push(TAPE_BLANK);
+        }
+        // Always adjust index
+        toChange.stateIndex = initIndex + 1;
+    }
+}
+
+// Defines a read/write transformation
+function doReadWriteTransform(toChange, rule) {
+    const initIndex = toChange.stateIndex;
+    const writeBit = rule[0];
+    const destState = rule[1];
+
+    toChange.tape[initIndex] = writeBit;
+    toChange.state = destState;
+}
+
 // Return a list of possible states from the current state
-// This is a recursive function that uses backtracking to compute
-function resolveStates(currentConfig, currentDepth, readWriteRules, movementRules, depthLimit, forward, skipBy) {
+// This is a recursive function that uses backtracking to compute (however, written iteratively)
+function resolveStates(initConfig, readWriteRules, movementRules, depthLimit, forward, skipBy) {
+    // Result arrays
     const resultNodes = [];
     const resultEdges = [];
 
-    // Limit on our depth here
-    if ((forward && currentDepth > depthLimit) || (!forward && currentDepth < depthLimit)) {
-        return {
-            resultNodes,
-            resultEdges
-        };
-    }
+    // Treat as stack
+    const workList = [];
 
-    // Adorn extra properties needed for graph display
-    const id = globalId++; // Use global counter for unique IDs
-    currentConfig.id = id;
-    currentConfig.depth = currentDepth;
+    // Add starter element
+    initConfig.depth = 0;
+    workList.push({
+        currentConfig: initConfig,
+        parent: null,
+    });
 
-    // Place deep copy of object in result
-    // Don't duplicate the 0th node
-    if (!(currentDepth === 0 && !forward)) {
-        resultNodes.push(JSON.parse(JSON.stringify(currentConfig)));
-    }
+    // Useful for going backwards
+    let initNodeId = 0;
 
-    // Backup our initial values, to restore later
-    const initState = currentConfig.state;
-    const initIndex = currentConfig.stateIndex;
-    const initTape = [...currentConfig.tape];
-    const initBit = initTape[initIndex];
+    // While we still have elements to consider...
+    while (workList.length !== 0) {
+        const work = workList.pop();
+        const currentConfig = work.currentConfig;
+        const currentDepth = currentConfig.depth;
+        const thisParent = work.parent;
 
-    // Two possible rule types...
-    const transforms = [
-        // Read/write
-        {
-            key: initState + ',' + initBit, // Defines key into readWriteRules map
-            ruleSet: readWriteRules,
-            // Function on how to apply a R/W rule
-            fn: (toChange, rule) => {
-                const writeBit = rule[0];
-                const destState = rule[1];
+        // Limit on our depth here
+        if ((forward && currentDepth > depthLimit) || (!forward && currentDepth < depthLimit)) {
+            // Ignore this node, at end of limit
+            continue;
+        }
 
-                toChange.tape[initIndex] = writeBit;
-                toChange.state = destState;
-            }
-        },
-        // Movement
-        {
-            key: initState, // Defines key into movementRules map
-            ruleSet: movementRules,
-            // Function on how to apply a movement rule
-            fn: (toChange, rule) => {
-                const move = rule[0];
-                const destState = rule[1];
+        // Adorn extra properties needed for graph display
+        const id = globalId++; // Use global counter for unique IDs
+        currentConfig.id = id;
+        if (currentDepth === 0) {
+            initNodeId = id;
+        }
 
-                toChange.state = destState;
-                if (move === '<') {
-                    // Move left
-                    if (initIndex === 0) {
-                        // Add blank to front if at left end of tape
-                        toChange.tape.unshift(TAPE_BLANK);
+        // Whether we "skip" this node in the output
+        const doSkip = currentDepth % skipBy !== 0;
+
+        // Place deep copy of object in result
+        // Don't duplicate the 0th node
+        if (!(currentDepth === 0 && !forward)) {
+            // Only add to output if adhering to skipBy
+            if (!doSkip) {
+                resultNodes.push(JSON.parse(JSON.stringify(currentConfig)));
+
+                // Create edge from our parent to us
+                if (thisParent != null) {
+                    let edge;
+                    let otherNode;
+
+                    if (!forward && thisParent === initNodeId) {
+                        otherNode = 0;
                     } else {
-                        // Adjust index only if did not add to front of list
-                        toChange.stateIndex = initIndex - 1;
+                        otherNode = thisParent;
                     }
-                } else if (move === '>') {
-                    // Move right
-                    if (initIndex === toChange.tape.length - 1) {
-                        // Add blank to end if at right end of tape
-                        toChange.tape.push(TAPE_BLANK);
+
+                    if (forward) {
+                        edge = {
+                            id: globalId++,
+                            source: otherNode,
+                            target: id
+                        };
+                    } else {
+                        edge = {
+                            id: globalId++,
+                            source: id,
+                            target: otherNode
+                        };
                     }
-                    // Always adjust index
-                    toChange.stateIndex = initIndex + 1;
+                    resultEdges.push(edge);
                 }
             }
         }
-    ];
 
-    // For all kinds of transformation rules...
-    for (let t of transforms) {
-        // Grab the transform key and relevant function
-        const key = t.key;
-        const ruleSet = t.ruleSet;
-        const transform = t.fn;
-
-        // Get rules from the set, based on the defined key
-        let rules = ruleSet.get(key);
-        if (!rules) {
-            // If no rules resolve, just make empty list (do nothing below)
-            rules = [];
+        // Need to push down parent if skipping
+        let parent;
+        if (doSkip) {
+            parent = thisParent;
+        } else {
+            // We are the parent!
+            parent = id;
         }
 
-        // For all rules that apply...
-        for (let rule of rules) {
-            // Apply the transition given
-            transform(currentConfig, rule);
+        // Extract some useful value
+        const initState = currentConfig.state;
+        const initBit = currentConfig.tape[currentConfig.stateIndex];
 
-            // Try to recurse on this
-            let newDepth;
-            if (forward) {
-                newDepth = currentDepth + 1;
-            } else {
-                newDepth = currentDepth - 1;
+        // Two possible rule types...
+        const transforms = [
+            // Read/write
+            {
+                key: initState + ',' + initBit, // Defines key into readWriteRules map
+                ruleSet: readWriteRules,
+                // Function on how to apply a R/W rule
+                fn: doReadWriteTransform
+            },
+            // Movement
+            {
+                key: initState, // Defines key into movementRules map
+                ruleSet: movementRules,
+                // Function on how to apply a movement rule
+                fn: doMoveTransform
             }
-            const subResult = resolveStates(currentConfig, newDepth, readWriteRules, movementRules, depthLimit, forward, skipBy);
+        ];
 
-            // Calculate any edges
-            // Need to account for skipBy parameter
-            const skipByDepthLimit = Math.abs(currentDepth) + skipBy;
-            const newEdges = subResult.resultNodes.filter(n => Math.abs(n.depth) === skipByDepthLimit)
-                .map(n => {
-                    if (forward) {
-                        return {
-                            id: globalId++,
-                            source: id,
-                            target: n.id
-                        }
-                    } else if (currentDepth === 0 && !forward) {
-                        return {
-                            id: globalId++,
-                            source: n.id,
-                            target: 0
-                        }
-                    } else {
-                        return {
-                            id: globalId++,
-                            source: n.id,
-                            target: id
-                        }
-                    }
+        // New depth for next node down
+        let newDepth;
+        if (forward) {
+            newDepth = currentDepth + 1;
+        } else {
+            newDepth = currentDepth - 1;
+        }
+
+        // For all kinds of transformation rules...
+        for (let t of transforms) {
+            // Grab the transform key and relevant function
+            const key = t.key;
+            const ruleSet = t.ruleSet;
+            const transform = t.fn;
+
+            // Get rules from the set, based on the defined key
+            let rules = ruleSet.get(key);
+            if (!rules) {
+                // If no rules resolve, do nothing more for this iteration
+                continue;
+            }
+
+            // For all rules that apply...
+            for (let rule of rules) {
+                // Apply the transition given (on a copy)
+                const newConfig = JSON.parse(JSON.stringify(currentConfig));
+                newConfig.depth = newDepth;
+                transform(newConfig, rule);
+
+                // Try to recurse on this
+                workList.push({
+                    currentConfig: newConfig,
+                    parent
                 });
-            const newNodes = subResult.resultNodes.filter(n => n.depth % skipBy === 0);
-
-            // Add to total result
-            resultNodes.push(...newNodes);
-            resultEdges.push(...subResult.resultEdges);
-            resultEdges.push(...newEdges);
-
-            // Restore the config completely for next transformation in the loop
-            currentConfig.tape = [...initTape];
-            currentConfig.state = initState;
-            currentConfig.stateIndex = initIndex;
+            }
         }
     }
 
@@ -375,12 +415,12 @@ function doUpdate() {
     // Now, in a recursive fashion, let us figure out all possible "forward" states from the "current"
     // We will impose a temporary limit on the "depth".
     // We also need to note down a mapping of "edges".
-    const forwardResult = resolveStates(initConfig, 0, readWriteMap, movementMap, maxDepth, true, skipBy);
+    const forwardResult = resolveStates(initConfig, readWriteMap, movementMap, maxDepth, true, skipBy);
     const forwardNodes = forwardResult.resultNodes;
     const forwardEdges = forwardResult.resultEdges;
 
     // Now, we will reverse the rules in the maps and recursively get the backward states
-    const reverseResult = resolveStates(initConfig, 0, reverseReadWriteMap, reverseMovementMap, minDepth, false, skipBy);
+    const reverseResult = resolveStates(initConfig, reverseReadWriteMap, reverseMovementMap, minDepth, false, skipBy);
     const reverseNodes = reverseResult.resultNodes;
     const reverseEdges = reverseResult.resultEdges;
 
