@@ -44,7 +44,7 @@ b
 
 //letterRegex is useful outside of parseRules and it makese sense to define these all together
 const letterRegex = RegExp("[a-z]");
-const numRegex = RegExp("[01-]");
+const numRegex = RegExp("[01_]");
 const directionRegex = RegExp("[<>]");
 
 
